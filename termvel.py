@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
 
 ## Functions
 def molarmass(frac, mass):
@@ -12,9 +13,8 @@ def mbartopa(p):
 def patombar(p):
 	return (p/100.)
 	
-def least_squares(x, y):
+def least_squares(x, y, k = 1):
 	## Calculate linear least square (needed for dyn. viscosity)
-	k = 1
 	X = np.zeros((k+1,len(x)))
 	for i in range(X.shape[0]):
 		X[i,:] = x**i
@@ -74,7 +74,8 @@ def vT_calc(planet, species, phase, p, D):
 	g = planet_data[planet]["g"]
 	Ratmo = planet_data[planet]["R"]
 	T = planet_data[planet]["fT"](np.log10(p))
-	rho_air = p/(Ratmo*T)
+	pPa = mbartopa(p)
+	rho_air = pPa/(Ratmo*T)
 	
 	dynvisc_corr = planet_data[planet]["mucorr"]
 	dynvisc = dynvisc_corr[0] + dynvisc_corr[1]*T
@@ -82,16 +83,20 @@ def vT_calc(planet, species, phase, p, D):
 	if(phase == "rain"):
 		rho_liq = spec_data[species]["rho_liq"]
 		W = np.log10((4. * (D**3.)*rho_air*g*(rho_liq - rho_air))/(3.*dynvisc**2.))
-		Re = -1.81391 + 1.34671*W - 0.12427*W**2. + 0.006344*W**3.
+		Re = 10.**(-1.81391 + 1.34671*W - 0.12427*W**2. + 0.006344*W**3.)
 		
 		return (dynvisc*Re)/(D*rho_air)
 		
 	elif(phase in ["ice","snow"]):
 		A_Ae = spec_data[species]["A_Ae_"+phase]
-		X = ((8./np.pi)*(A_Ae*0.333*(D**2.4)*rho_air*g)/(dynvisc**2))
+		m = 0.333*(D**2.4)
+		X = ((8.*A_Ae*m*rho_air*g)/(np.pi*dynvisc**2))
 		Re = 8.5*(np.sqrt(1. + 0.1519*np.sqrt(X)) - 1.)**2.
 
-		return ((1./D)*(dynvisc*Re)/(4.*rho_air))
+		return ((1./D)*(dynvisc*Re)/(rho_air))
+
+def vT_fit(x, a, b, c):
+	return( a + b*x[:,0] + c*x[:,1])
 	
 global planet_data, spec_data
 ## Planet arrays
@@ -162,18 +167,30 @@ for planet in planet_data.keys():
 	
 ## Setup pressure intervals for vT calculation
 P = {}
-P["H2O"] = np.asarray([4750., 4500., 4000., 3500.,3000., 2500., 2000., 1000.])
+Pref = 1000.
+P["H2O"] = np.asarray([5000., 4750., 4500., 4000., 3500.,3000., 2500., 2000., 1000.])
 P["NH3"] = np.asarray([1000., 850., 700., 600., 500., 400.])
 
 ## Set up terminal velocity dictionary
 vT = {}
 
+## Fit parameters
+x = {}
+y = {}
+gamma = {}
+
 ## Run terminal velocity for each species for each planet
 for species in spec_data.keys():
 	vT[species] = {}
+	x[species] = {}
+	y[species] = {}
+	gamma[species] = {}
 	
 	for planet in planet_data.keys():
 		vT[species][planet] = {}
+		x[species][planet] = {}
+		y[species][planet] = {}
+		gamma[species][planet] = {}
 		
 		for phase in ["rain","ice","snow"]:
 			## setup particle sizes
@@ -194,3 +211,35 @@ for species in spec_data.keys():
 				for i, d in enumerate(D):
 					vT_d = vT_calc(planet, species, phase, p, d)
 					vT[species][planet][phase][p][i] = vT_d
+			
+			## Convert 2D array of pressure and particle size to 1D
+			## Also convert vT to 1D array
+			## For fitting
+			xData = []
+			zData = []
+			for i in range(len(P[species])):
+				for j in range(len(D)):
+					#index = (i*len(P[species])) + j
+					xData.append([Pref/P[species][i],D[j]])
+					zData.append(vT[species][planet][phase][P[species][i]][j])
+			xData = np.asarray(xData)
+			zData = np.asarray(zData)
+
+			par, cov = curve_fit(vT_fit, np.log10(xData),np.log10(zData))
+			
+			## Save the parameters
+			x[species][planet][phase] = 10.**par[0]
+			y[species][planet][phase] = par[2]
+			gamma[species][planet][phase] = par[1]
+	
+## Plot parameters	
+pltspec = "H2O"
+pltplanet = "Jupiter"
+pltphase = "snow"
+pltP = 1000.
+
+plt.figure()
+plt.plot(vT[pltspec][pltplanet][pltphase]["D"]*1000.,vT[pltspec][pltplanet][pltphase][pltP],'k.')
+fitted = x[pltspec][pltplanet][pltphase]*(vT[pltspec][pltplanet][pltphase]["D"]**y[pltspec][pltplanet][pltphase])*(Pref/pltP)**gamma[pltspec][pltplanet][pltphase]
+plt.plot(vT[pltspec][pltplanet][pltphase]["D"]*1000.,fitted,'k-')
+plt.show()
