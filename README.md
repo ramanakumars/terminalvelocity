@@ -14,3 +14,8 @@ Terminal velocity calculations for Jupiter cloud modelling
 
 **13 Jul 2016** *ramana*
 > Setup scipy.optimize.curve_fit to calculate fit parameters for power law
+
+**29 Jul 2016** *ramana*
+> Modified vT calculation function to account for ice mass calculation
+
+> Printing the x, y and gamma values for Jupiter for comparison 

@@ -87,14 +87,21 @@ def vT_calc(planet, species, phase, p, D):
 		
 		return (dynvisc*Re)/(D*rho_air)
 		
-	elif(phase in ["ice","snow"]):
+	elif(phase == "snow"):
 		A_Ae = spec_data[species]["A_Ae_"+phase]
 		m = 0.333*(D**2.4)
 		X = ((8.*A_Ae*m*rho_air*g)/(np.pi*dynvisc**2))
 		Re = 8.5*(np.sqrt(1. + 0.1519*np.sqrt(X)) - 1.)**2.
 
 		return ((1./D)*(dynvisc*Re)/(rho_air))
+	elif(phase == "ice"):
+		A_Ae = spec_data[species]["A_Ae_"+phase]
+		rho_scale = spec_data["H2O"]["rho_ice"]/spec_data[species]["rho_ice"]
+		m = np.power((D/11.9)/rho_scale,2.)
+		X = ((8.*A_Ae*m*rho_air*g)/(np.pi*dynvisc**2))
+		Re = 8.5*(np.sqrt(1. + 0.1519*np.sqrt(X)) - 1.)**2.
 
+		return ((1./D)*(dynvisc*Re)/(rho_air))
 def vT_fit(x, a, b, c):
 	return( a + b*x[:,0] + c*x[:,1])
 	
@@ -168,8 +175,11 @@ for planet in planet_data.keys():
 ## Setup pressure intervals for vT calculation
 P = {}
 Pref = 1000.
-P["H2O"] = np.asarray([5000., 4750., 4500., 4000., 3500.,3000., 2500., 2000., 1000.])
-P["NH3"] = np.asarray([1000., 850., 700., 600., 500., 400.])
+#P["H2O"] = np.asarray([5000., 4750., 4500., 4000., 3500.,3000., 2500., 2000., 1000.])
+#P["NH3"] = np.asarray([1000., 850., 700., 600., 500., 400.])
+
+P["H2O"] = np.arange(1000.,5000.,10)
+P["NH3"] = np.arange(400.,1000.,10)
 
 ## Set up terminal velocity dictionary
 vT = {}
@@ -235,11 +245,24 @@ for species in spec_data.keys():
 ## Plot parameters	
 pltspec = "H2O"
 pltplanet = "Jupiter"
-pltphase = "snow"
+pltphase = "ice"
 pltP = 1000.
 
 plt.figure()
 plt.plot(vT[pltspec][pltplanet][pltphase]["D"]*1000.,vT[pltspec][pltplanet][pltphase][pltP],'k.')
 fitted = x[pltspec][pltplanet][pltphase]*(vT[pltspec][pltplanet][pltphase]["D"]**y[pltspec][pltplanet][pltphase])*(Pref/pltP)**gamma[pltspec][pltplanet][pltphase]
 plt.plot(vT[pltspec][pltplanet][pltphase]["D"]*1000.,fitted,'k-')
+
+printplanet = "Jupiter"
+for species in spec_data.keys():
+	print(species)
+	print("----------------")
+	for phase in ["ice","snow","rain"]:
+		print("Phase: %s"%(phase))
+		print("x: %.4f"%(x[species][printplanet][phase]))
+		print("y: %.4f"%(y[species][printplanet][phase]))
+		print("gamma: %.4f"%(gamma[species][printplanet][phase]))
+		print()
+	print()
+
 plt.show()
