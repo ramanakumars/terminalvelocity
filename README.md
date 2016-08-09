@@ -18,4 +18,7 @@ Terminal velocity calculations for Jupiter cloud modelling
 **29 Jul 2016** *ramana*
 > Modified vT calculation function to account for ice mass calculation
 
-> Printing the x, y and gamma values for Jupiter for comparison 
+> Printing the x, y and gamma values for Jupiter for comparison
+
+**09 Aug 2016** *ramana*
+> Added parallel processing for speeeeeed 

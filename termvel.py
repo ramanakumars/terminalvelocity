@@ -2,6 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
+import pp
+import multiprocessing
+
+## Initialize parallel python
+ppservers = ()
+ppservers = ()
+
+ncpu = int(np.min([6,multiprocessing.cpu_count()]))
+
+job_server = pp.Server(ncpu, ppservers = ppservers)
+
+print("Parallel server initialized! Running with ", job_server.get_ncpus()," CPUs")
 
 ## Functions
 def molarmass(frac, mass):
@@ -59,7 +71,7 @@ def dynvisc(planet):
 		viscy[i] = nu;
 	return(least_squares(viscx,viscy))
 
-def vT_calc(planet, species, phase, p, D):
+def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 	## Terminal velocity calculation
 	## From Palotai, Cs. and Dowling. T. E. 2008, Icarus 194, 303-326
 	## Variables: 
@@ -68,9 +80,7 @@ def vT_calc(planet, species, phase, p, D):
 	## 	phase [string] - either rain, snow or ice
 	##	p [float] - Pressure in mbar
 	## 	D [float] - diameter of particle
-	
-	global planet_data, spec_data
-	
+
 	g = planet_data[planet]["g"]
 	Ratmo = planet_data[planet]["R"]
 	T = planet_data[planet]["fT"](np.log10(p))
@@ -102,6 +112,7 @@ def vT_calc(planet, species, phase, p, D):
 		Re = 8.5*(np.sqrt(1. + 0.1519*np.sqrt(X)) - 1.)**2.
 
 		return ((1./D)*(dynvisc*Re)/(rho_air))
+
 def vT_fit(x, a, b, c):
 	return( a + b*x[:,0] + c*x[:,1])
 	
@@ -178,8 +189,8 @@ Pref = 1000.
 #P["H2O"] = np.asarray([5000., 4750., 4500., 4000., 3500.,3000., 2500., 2000., 1000.])
 #P["NH3"] = np.asarray([1000., 850., 700., 600., 500., 400.])
 
-P["H2O"] = np.arange(1000.,5000.,10)
-P["NH3"] = np.arange(400.,1000.,10)
+P["H2O"] = np.linspace(1000.,5000.,10)
+P["NH3"] = np.linspace(400.,1000.,10)
 
 ## Set up terminal velocity dictionary
 vT = {}
@@ -191,6 +202,7 @@ gamma = {}
 
 ## Run terminal velocity for each species for each planet
 for species in spec_data.keys():
+	print("\nSpecies: %s"%(species))
 	vT[species] = {}
 	x[species] = {}
 	y[species] = {}
@@ -203,6 +215,7 @@ for species in spec_data.keys():
 		gamma[species][planet] = {}
 		
 		for phase in ["rain","ice","snow"]:
+			print("\tPhase: %s"%(phase))
 			## setup particle sizes
 			## different sizes for each phase
 			
@@ -215,26 +228,36 @@ for species in spec_data.keys():
 				
 			vT[species][planet][phase] = {}
 			vT[species][planet][phase]["D"] = D
+			
+			print("\t\tCalculating terminal velocity profile")
+			## Parallelize the calculation script
+			
 			for p in P[species]:
 				vT[species][planet][phase][p] = np.zeros(len(D))
 				
-				for i, d in enumerate(D):
-					vT_d = vT_calc(planet, species, phase, p, d)
-					vT[species][planet][phase][p][i] = vT_d
+			jobs = [(i, job_server.submit(vT_calc,(planet,species, phase, p, D, planet_data, spec_data),(mbartopa,),("import numpy as np",))) for i, p in enumerate(P[species])]
 			
+			for i, job in jobs:
+				vT_d = job()
+				vT[species][planet][phase][P[species][i]] = vT_d
+		
 			## Convert 2D array of pressure and particle size to 1D
 			## Also convert vT to 1D array
 			## For fitting
+			
 			xData = []
 			zData = []
+			
+			print("\t\tCreating array to fit")
 			for i in range(len(P[species])):
 				for j in range(len(D)):
 					#index = (i*len(P[species])) + j
-					xData.append([Pref/P[species][i],D[j]])
+					xData.append(((Pref/P[species][i]),D[j]))
 					zData.append(vT[species][planet][phase][P[species][i]][j])
 			xData = np.asarray(xData)
 			zData = np.asarray(zData)
 
+			print("\t\tFitting")
 			par, cov = curve_fit(vT_fit, np.log10(xData),np.log10(zData))
 			
 			## Save the parameters
@@ -264,5 +287,4 @@ for species in spec_data.keys():
 		print("gamma: %.4f"%(gamma[species][printplanet][phase]))
 		print()
 	print()
-
 plt.show()
