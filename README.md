@@ -22,3 +22,6 @@ Terminal velocity calculations for Jupiter cloud modelling
 
 **09 Aug 2016** *ramana*
 > Added parallel processing for speeeeeed 
+
+**25 Aug 2016** *ramana*
+> Updated T-P profile for Saturn from Lindal 1985

@@ -99,7 +99,8 @@ def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 		
 	elif(phase == "snow"):
 		A_Ae = spec_data[species]["A_Ae_"+phase]
-		m = 0.333*(D**2.4)
+		rho_scale = spec_data[species]["rho_ice"]/spec_data["H2O"]["rho_ice"]
+		m = 0.333*rho_scale*0.5*(D**2.4)
 		X = ((8.*A_Ae*m*rho_air*g)/(np.pi*dynvisc**2))
 		Re = 8.5*(np.sqrt(1. + 0.1519*np.sqrt(X)) - 1.)**2.
 
@@ -120,7 +121,7 @@ global planet_data, spec_data
 ## Planet arrays
 planet_data = {}
 planet_data["Jupiter"]  = {"g": 22.31, "xH2": 0.864, "xHe": 0.136,"datfile": "jupiter_data.csv", "Pref": 1000.}
-#planet_data["Saturn"] = {"g":10.5, "xH2": 0.96,"xHe": 0.04, "datfile": "saturn_data.csv", "Pref": 1000.} 		
+planet_data["Saturn"] = {"g":10.5, "xH2": 0.96,"xHe": 0.04, "datfile": "saturn_data.csv", "Pref": 1000.} 		
 
 ## Species arrays
 spec_data = {}
@@ -150,7 +151,7 @@ for planet in planet_data.keys():
 	data = np.genfromtxt(file,skip_header = 1, delimiter = ",",missing_values = '', filling_values = None)
 	
 	## Clean up missing values
-	data = data[np.isfinite(data[:,1]) & np.isfinite(data[:,2])]
+	data = data[np.isfinite(data[:,1])]
 	
 	# Set up P with better resolution
 	P = 10.**np.arange(np.log10(data[0,0]), np.log10(data[-1,0]), 0.01) ## P from 10 mbar to 10 bar
@@ -209,13 +210,14 @@ for species in spec_data.keys():
 	gamma[species] = {}
 	
 	for planet in planet_data.keys():
+		print("\tPlanet: %s"%(planet))
 		vT[species][planet] = {}
 		x[species][planet] = {}
 		y[species][planet] = {}
 		gamma[species][planet] = {}
 		
 		for phase in ["rain","ice","snow"]:
-			print("\tPhase: %s"%(phase))
+			print("\t\tPhase: %s"%(phase))
 			## setup particle sizes
 			## different sizes for each phase
 			
@@ -229,7 +231,7 @@ for species in spec_data.keys():
 			vT[species][planet][phase] = {}
 			vT[species][planet][phase]["D"] = D
 			
-			print("\t\tCalculating terminal velocity profile")
+			print("\t\t\tCalculating terminal velocity profile")
 			## Parallelize the calculation script
 			
 			for p in P[species]:
@@ -267,8 +269,8 @@ for species in spec_data.keys():
 	
 ## Plot parameters	
 pltspec = "H2O"
-pltplanet = "Jupiter"
-pltphase = "ice"
+pltplanet = "Saturn"
+pltphase = "rain"
 pltP = 1000.
 
 plt.figure()
@@ -276,7 +278,7 @@ plt.plot(vT[pltspec][pltplanet][pltphase]["D"]*1000.,vT[pltspec][pltplanet][pltp
 fitted = x[pltspec][pltplanet][pltphase]*(vT[pltspec][pltplanet][pltphase]["D"]**y[pltspec][pltplanet][pltphase])*(Pref/pltP)**gamma[pltspec][pltplanet][pltphase]
 plt.plot(vT[pltspec][pltplanet][pltphase]["D"]*1000.,fitted,'k-')
 
-printplanet = "Jupiter"
+printplanet = "Saturn"
 for species in spec_data.keys():
 	print(species)
 	print("----------------")
