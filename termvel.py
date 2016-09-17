@@ -97,7 +97,7 @@ def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 	elif(phase == "snow"):
 		A_Ae = spec_data[species]["A_Ae_"+phase]
 		rho_scale = spec_data[species]["rho_ice"]/spec_data["H2O"]["rho_ice"]
-		m = 0.333*rho_scale*0.5*(D**2.4)
+		m = 0.333*rho_scale*(D**2.4)
 		X = ((8.*A_Ae*m*rho_air*g)/(np.pi*dynvisc**2))
 		Re = 8.5*(np.sqrt(1. + 0.1519*np.sqrt(X)) - 1.)**2.
 
@@ -142,7 +142,7 @@ for planet in planet_data.keys():
 	print("Setting up %s"%(planet))
 	## Calculate molar mass of atmosphere from H2 and He concentrations
 	Matmo = molarmass([planet_data[planet]["xH2"],planet_data[planet]["xHe"]],[2.,4.])
-	Ratmo = 8314./Matmo
+	Ratmo = 8314.4598/Matmo
 	planet_data[planet]["R"] = Ratmo
 	
 	## Open the T-P and viscosity file
@@ -342,14 +342,15 @@ for species in spec_data.keys():
 			
 			
 			x2[species][planet][phase] = 10.**par2[0]*((Pref2/Pref)**(gamma2[species][planet][phase]))
-			y2[species][planet][phase] = par2[1]
-			
-			
-	
+			y2[species][planet][phase] = par2[1]			
+
+xtheo = {"NH3": {"snow": 48.606, "rain": 2479.}, "H2O": {"snow": 50.172,"rain": 2615.1}}
+ytheo = {"NH3": {"snow": 0.48803, "rain": 0.76217}, "H2O": {"snow": 0.47798,"rain": 0.74245}}
+gammatheo = {"snow": 0.47, "rain": 0.33}
 ## Plot parameters	
-pltspec = "H2O"
-pltplanet = "Jupiter"
-pltphase = "rain"
+pltspec = "NH3"
+pltplanet = "Saturn"
+pltphase = "snow"
 pltP = 1000.
 vTp = vT[pltspec][pltplanet][pltphase]
 
@@ -364,16 +365,31 @@ R2 = 1. - ssres/sstot
 ax1.plot(vTp["D"]*1000.,fitted,'k-')
 ax1.text(0.1,0.5,"R2: %.4f"%(R2))
 
-
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(111)
+if(False):
+	filename = "%s_%s_1bar.csv"%(pltspec,pltphase)
+	dat = np.loadtxt(filename, delimiter=',')
+	ax2.plot(dat[:,0]*1000.,dat[:,1],'b*')
+
 ax2.plot(vTp["D"]*1000.,vTp[pltP],'b.')
+
 fitted2 = x2[pltspec][pltplanet][pltphase]*(vTp["D"]**y2[pltspec][pltplanet][pltphase])*(Pref/pltP)**gamma2[pltspec][pltplanet][pltphase]
 sstot = np.sum((vTp[pltP] - np.average(vTp[pltP]))**2.)
 ssres = np.sum((vTp[pltP] - fitted2)**2.)
+
 R2 = 1. - ssres/sstot
 ax2.plot(vTp["D"]*1000.,fitted2,'b-')
-ax2.text(0.1,0.5,"R2: %.4f"%(R2))
+ax2.text(0.8,0.5,"R2_theo: %.4f"%(R2))
+
+if(pltplanet == "Jupiter"):
+	if(pltphase in ["rain","snow"]):
+		theo = xtheo[pltspec][pltphase]*(vTp["D"]**ytheo[pltspec][pltphase])*(Pref/pltP)**gammatheo[pltphase]
+		ssres = np.sum((vTp[pltP] - theo)**2.)
+
+		R2 = 1. - ssres/sstot
+		ax2.plot(vTp["D"]*1000.,theo,'b--')
+		ax2.text(0.5,0.8,"R2: %.4f"%(R2))
 
 printplanet = "Jupiter"
 for species in spec_data.keys():
