@@ -29,3 +29,8 @@ Terminal velocity calculations for Jupiter cloud modelling
 > *triplepoint*: Added triplepoint reference pressure calculation 
 
 > *triplepoint*: Added csv saving
+
+**17 Sep 2016** *ramana*
+> Merged triplepoint with master
+
+> Added new comments and marked the triplepoint calculations as "Deprecated"
