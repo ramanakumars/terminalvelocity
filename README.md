@@ -34,3 +34,14 @@ Terminal velocity calculations for Jupiter cloud modelling
 > Merged triplepoint with master
 
 > Added new comments and marked the triplepoint calculations as "Deprecated"
+
+**03 Oct 2016** *ramana*
+> *plot* Added Uranus
+
+> *plot* Removed ant_liq, ant_ice and q values for planets
+
+> *plot* Removed DEPCRECATED tags
+
+
+**07 Oct 2016** *ramana*
+> *plot* Added H2, He and CH4 ratios and created non-condensing species data

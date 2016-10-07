@@ -40,8 +40,8 @@ def dynvisc(planet):
 	
 	global planet_data
 	## Fetch H2 and He concentrations
-	x1 = planet_data[planet]["xH2"]
-	x2 = planet_data[planet]["xHe"]
+	x1 = planet_data[planet]["xi"]["H2"]
+	x2 = planet_data[planet]["xi"]["He"]
 	
 	n = 64
 	viscx = np.zeros(n+1)
@@ -120,29 +120,30 @@ def vT_fit_old(x, a, b, c):
 global planet_data, spec_data
 ## Planet arrays
 planet_data = {}
-planet_data["Jupiter"]  = {"g": 22.31, "xH2": 0.864, "xHe": 0.136,"datfile": "jupiter_data.csv", "Pref": 1000.}
-planet_data["Saturn"] = {"g":10.5, "xH2": 0.96,"xHe": 0.04, "datfile": "saturn_data.csv", "Pref": 1000.} 		
+planet_data["Jupiter"]  = {"g": 22.31, "xi": {"H2":0.864,"He":0.136}, "datfile": "jupiter_data.csv", "Pref": 1000.}
+planet_data["Saturn"] = {"g":10.5, "xi":  {"H2":0.96,"He": 0.04}, "datfile": "saturn_data.csv", "Pref": 1000.}
+
+## Uranus and Neptune atmos data from Encrenaz 2004 DOI: 10.1007/s11214-005-1950-6
+planet_data["Uranus"] = {"g":8.69, "xi": {"H2":0.83,"He": 0.15,"CH4": 0.03}, "datfile": "uranus_data.csv", "Pref": 1000.}
+planet_data["Neptune"] = {"g":11.15, "xi": {"H2":0.79,"He": 0.18,"CH4": 0.03}, "datfile": "neptune_data.csv", "Pref": 1000.}
 
 ## Species arrays
 ## ant_ice and ant_liq are unnecessary and exist in case we need them for another calculation
 spec_data = {}
-spec_data["H2O"] = {"mass":18., "ant_liq": [11.079, -2261.1], "ant_ice": [12.61,-2681.18], "q": 0.001420, "rho_ice": 917.0, "rho_liq": 1000., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "tp": 273.16}
-spec_data["NH3"] = {"mass":17., "ant_liq": [10.201, -1248.0], "ant_ice": [11.90,-1588.00], "q": 0.000187, "rho_ice": 786.8, "rho_liq":  733., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "tp": 195.20}
+spec_data["H2O"] = {"mass":18., "rho_ice": 917.0, "rho_liq": 1000., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "tp": 273.16, "docalc":True}
+spec_data["NH3"] = {"mass":17., "rho_ice": 786.8, "rho_liq":  733., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "tp": 195.20, "docalc":True}
 
-## T-P profiles
-## tp_profile["planet"]["pressure mbar"][variable sought] 
-'''tp_profile = {}
-tp_profile["Jupiter"]={}
-tp_profile["Jupiter"]["100"]={"T": 111.5, "Rho": 0.0244, "Dynvisc": 5.71E-06}
-tp_profile["Jupiter"]["200"]={"T": 113.5, "Rho": 0.0478, "Dynvisc": 5.78E-06}
-tp_profile["Jupiter"]["300"]={"T": 119.5, "Rho": 0.0682, "Dynvisc": 5.99E-06}
-'''
+## From Uranus edited by Jay T. Bergstralh, Ellis D. Miner, Mildred ISBN: 978-0816512089 and #http://encyclopedia.airliquide.com/encyclopedia.asp?GasID=41#GeneralData
+spec_data["CH4"] = {"mass":16., "rho_ice": 500., "rho_liq":  656., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "tp": 90.54, "docalc":True} 
+spec_data["H2"] = {"mass": 2., "docalc": False}
+spec_data["He"] = {"mass": 4., "docalc": False}
+
 
 ## Setup the T-P profile, dyn. visc. data and atmospheric data
 for planet in planet_data.keys():
 	print("Setting up %s"%(planet))
 	## Calculate molar mass of atmosphere from H2 and He concentrations
-	Matmo = molarmass([planet_data[planet]["xH2"],planet_data[planet]["xHe"]],[2.,4.])
+	Matmo = molarmass([planet_data[planet]["xi"][spec] for spec in planet_data[planet]["xi"].keys()],[spec_data[spec]["mass"] for spec in planet_data[planet]["xi"].keys()])
 	Ratmo = 8314.4598/Matmo
 	planet_data[planet]["R"] = Ratmo
 	
@@ -174,36 +175,13 @@ for planet in planet_data.keys():
 	
 	planet_data[planet]["tpPressure"] = {}
 	
-	'''DEPRECATED
-	for species in spec_data.keys():
-		print("\tFinding fit for reference triple point pressure for %s"%(species))
-		tp = spec_data[species]["tp"]
-		tpP = 10.**(newtons(fT, tp, np.log10(5000.)))
-		print("\tTriple point found at %.2f mbar"%(tpP))
-		planet_data[planet]["tpPressure"][species] = tpP'''
-
-	''' UNNECESSARY
-	#Plot the data
-	plt.figure()
-	plt.plot(data[:,1],data[:,0],'ro')
-	plt.plot(fT(np.log10(P)),P,'r-')
-	plt.axes().set_yscale('log')
-	plt.axes().set_ylim((np.max(P),np.min(P)))
-	
-	plt.figure()
-	plt.plot(mu,P,'k--')
-	plt.axes().set_yscale('log')
-	plt.axes().set_ylim((np.max(P),np.min(P)))'''
-	
 ## Setup pressure intervals for vT calculation
 P = {}
 Pref = 1000.
 
-''' Old pressure values #P["H2O"] = np.asarray([5000., 4750., 4500., 4000., 3500.,3000., 2500., 2000., 1000.])
-#P["NH3"] = np.asarray([1000., 850., 700., 600., 500., 400.])'''
-
 P["H2O"] = np.linspace(1000.,5000.,10)
 P["NH3"] = np.linspace(400.,1000.,10)
+P["CH4"] = np.linspace(1000.,4000.,10)
 
 ## x, y, gamma, vT and chi are dictionaries which are organized as follows:
 ## [Variable] - either x, y, gamma or chi^2 of the fit
@@ -218,20 +196,15 @@ P["NH3"] = np.linspace(400.,1000.,10)
 vT = {}
 
 ## Fit parameters
-
 x = {}
 y = {}
 gamma = {}
 chi = {}
 
-'''DEPRECATED
-x2 = {}
-y2 = {}
-gamma2 = {}
-chi2 = {}'''
-
 ## Run terminal velocity for each species for each planet
 for species in spec_data.keys():
+	if(spec_data[species]["docalc"] == False):
+		continue
 	print("\nSpecies: %s"%(species))
 	vT[species] = {}
 	
@@ -240,12 +213,6 @@ for species in spec_data.keys():
 	gamma[species] = {}
 	chi[species] = {}
 	
-	'''DEPRECATED
-	x2[species] = {}
-	y2[species] = {}
-	gamma2[species] = {}
-	chi2[species] = {}'''
-	
 	for planet in planet_data.keys():
 		print("\tPlanet: %s"%(planet))
 		vT[species][planet] = {}
@@ -253,12 +220,6 @@ for species in spec_data.keys():
 		y[species][planet] = {}
 		gamma[species][planet] = {}
 		chi[species][planet] = {}
-		
-		'''DEPRECATED
-		x2[species][planet] = {}
-		y2[species][planet] = {}
-		gamma2[species][planet] = {}
-		chi2[species][planet] = {}'''
 		
 		for phase in ["rain","ice","snow"]:
 			print("\t\tPhase: %s"%(phase))
@@ -297,11 +258,6 @@ for species in spec_data.keys():
 			outname = "%s_%s_%s.csv"%(planet,species,phase)
 			np.savetxt(outname,vT_dat,header=header,delimiter=",")
 			
-			''' DEPRECATED
-			## Calculate the terminal velocity and save it to the dictionary at the triple-point pressure
-			vT_d = vT_calc(planet,species, phase, planet_data[planet]["tpPressure"][species], D, planet_data, spec_data)
-			vT[species][planet][phase][planet_data[planet]["tpPressure"][species]] = vT_d'''
-
 			gamma_vals = []			
 						
 			## Loop through each pressure to calculate the gamma fit for (P0/P)
@@ -315,18 +271,7 @@ for species in spec_data.keys():
 			gamma[species][planet][phase] = np.average(gamma_vals)
 			
 			gamma_vals = []
-			
-			'''DEPRECATED
-			Pref2 = planet_data[planet]["tpPressure"][species]
 
-			for p in P[species]:
-				if(p != Pref2):
-					gamma_p = np.average(np.log(vT[species][planet][phase][p]/vT[species][planet][phase][Pref2])/np.log(Pref2/p))
-					gamma_vals.append(gamma_p)
-			
-			gamma2[species][planet][phase] = np.average(gamma_vals)
-			'''
-			
 			## Convert 2D array of pressure and particle size to 1D (xData)
 			## Also convert vT to 1D array (zData)
 			## For fitting
@@ -348,38 +293,10 @@ for species in spec_data.keys():
 			## Save the parameters
 			x[species][planet][phase] = 10.**par[0]
 			y[species][planet][phase] = par[1]
-			
-			
-			'''DEPRECATED
-			## Run with new triple-point reference pressure
-			xData2 = []
-			zData2 = []
-			
-
-				Pref2 = planet_data[planet]["tpPressure"][species]
-				print("\t\tCreating array to fit")
-				for i in range(len(P[species])):
-					for j in range(len(D)):
-						#index = (i*len(P[species])) + j
-						xData2.append(D[j])
-						zData2.append(vT[species][planet][phase][P[species][i]][j]/((Pref2/P[species][i])**gamma2[species][planet][phase]))
-				xData2 = np.asarray(xData2)
-				zData2 = np.asarray(zData2)
-				
-				print("\t\tFitting with triple point reference")
-				par2, cov2 = curve_fit(vT_fit, np.log10(xData2),np.log10(zData2))
-				
-				
-				x2[species][planet][phase] = 10.**par2[0]*((Pref2/Pref)**(gamma2[species][planet][phase]))
-				y2[species][planet][phase] = par2[1]		'''
-
-xtheo = {"NH3": {"snow": 48.606, "rain": 2479.}, "H2O": {"snow": 50.172,"rain": 2615.1}}
-ytheo = {"NH3": {"snow": 0.48803, "rain": 0.76217}, "H2O": {"snow": 0.47798,"rain": 0.74245}}
-gammatheo = {"snow": 0.47, "rain": 0.33}
 
 ## Plot parameters	
-pltspec = "H2O"
-pltplanet = "Saturn"
+pltspec = "CH4"
+pltplanet = "Neptune"
 pltphase = "snow"
 pltP = 1000.
 vTp = vT[pltspec][pltplanet][pltphase]
@@ -407,49 +324,12 @@ ax1.plot(vTp["D"]*1000.,fitted,'k-')
 ## So 0, 0 is the bot-left and 1,1 is the top-right and 0.5, 0.5 is in the middle of the plot
 ax1.text(0.1,0.5,"R2: %.4f"%(R2),fontsize=12,transform=ax1.transAxes)
 
-'''DEPRECATED
-fig2 = plt.figure()
-ax2 = fig2.add_subplot(111)
-if(False):
-	filename = "%s_%s_1bar.csv"%(pltspec,pltphase)
-	dat = np.loadtxt(filename, delimiter=',')
-	ax2.plot(dat[:,0]*1000.,dat[:,1],'b*')
 
-ax2.plot(vTp["D"]*1000.,vTp[pltP],'b.')
-
-fitted2 = x2[pltspec][pltplanet][pltphase]*(vTp["D"]**y2[pltspec][pltplanet][pltphase])*(Pref/pltP)**gamma2[pltspec][pltplanet][pltphase]
-sstot = np.sum((vTp[pltP] - np.average(vTp[pltP]))**2.)
-ssres = np.sum((vTp[pltP] - fitted2)**2.)
-
-R2 = 1. - ssres/sstot
-ax2.plot(vTp["D"]*1000.,fitted2,'b-')
-ax2.text(0.8,0.5,"R2_theo: %.4f"%(R2))
-
-if(pltplanet == "Jupiter"):
-	if(pltphase in ["rain","snow"]):
-		theo = xtheo[pltspec][pltphase]*(vTp["D"]**ytheo[pltspec][pltphase])*(Pref/pltP)**gammatheo[pltphase]
-		ssres = np.sum((vTp[pltP] - theo)**2.)
-
-		R2 = 1. - ssres/sstot
-		ax2.plot(vTp["D"]*1000.,theo,'b--')
-		ax2.text(0.5,0.8,"R2: %.4f"%(R2))
-
-printplanet = "Jupiter"
+''' Do not need to print values anymore
+printplanet = "Neptune"
 for species in spec_data.keys():
-	print(species)
-	print("----------------")
-	for phase in ["ice","snow","rain"]:
-		print("Phase: %s"%(phase))
-		print("x: %.4f \t x2 : %.4f"%(x[species][printplanet][phase],x2[species][printplanet][phase]))
-		print("y: %.4f \t y2 : %.4f"%(y[species][printplanet][phase],y2[species][printplanet][phase]))
-		print("gamma: %.4f \t gamma2 : %.4f"%(gamma[species][printplanet][phase],gamma2[species][printplanet][phase]))
-		print()
-	print()
-plt.show()
-'''
-
-printplanet = "Jupiter"
-for species in spec_data.keys():
+	if(spec_data[species]["docalc"] == False):
+		continue
 	print(species)
 	print("----------------")
 	for phase in ["ice","snow","rain"]:
@@ -459,4 +339,4 @@ for species in spec_data.keys():
 		print("gamma: %.4f"%(gamma[species][printplanet][phase]))
 		print()
 	print()
-plt.show()
+plt.show()'''

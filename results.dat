@@ -1,0 +1,117 @@
+JUPITER
+################
+H2O
+----------------
+Phase: ice
+alpha: 266.7452
+beta: 0.7881
+gamma: 0.2404
+
+Phase: snow
+alpha: 44.7293
+beta: 0.4607
+gamma: 0.3124
+
+Phase: rain
+alpha: 2198.6690
+beta: 0.7148
+gamma: 0.3245
+
+
+NH3
+----------------
+Phase: ice
+alpha: 302.2208
+beta: 0.8332
+gamma: 0.2203
+
+Phase: snow
+alpha: 51.4003
+beta: 0.4988
+gamma: 0.3059
+
+Phase: rain
+alpha: 2433.0087
+beta: 0.7594
+gamma: 0.3206
+
+
+SATURN
+################
+
+H2O
+----------------
+Phase: ice
+alpha: 173.9493
+beta: 0.7912
+gamma: 0.2326
+
+Phase: snow
+alpha: 29.2841
+beta: 0.4636
+gamma: 0.3056
+
+Phase: rain
+alpha: 1439.3418
+beta: 0.7173
+gamma: 0.3180
+
+
+NH3
+----------------
+Phase: ice
+alpha: 196.8859
+beta: 0.8361
+gamma: 0.2100
+
+Phase: snow
+alpha: 33.7670
+beta: 0.5024
+gamma: 0.2996
+
+Phase: rain
+alpha: 1601.8435
+beta: 0.7630
+gamma: 0.3151
+
+
+
+URANUS
+################
+
+CH4
+----------------
+Phase: ice
+alpha: 61.7024
+beta: 0.8208
+gamma: 0.1955
+
+Phase: snow
+alpha: 12.5423
+beta: 0.4558
+gamma: 0.2916
+
+Phase: rain
+alpha: 647.7984
+beta: 0.7018
+gamma: 0.3067
+
+
+NEPTUNE
+#################
+CH4
+----------------
+Phase: ice
+x: 61.5923
+y: 0.7996
+gamma: 0.1814
+
+Phase: snow
+x: 12.7216
+y: 0.4362
+gamma: 0.3278
+
+Phase: rain
+x: 673.4679
+y: 0.6877
+gamma: 0.3486
