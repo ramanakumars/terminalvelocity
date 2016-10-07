@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from cycler import cycler
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 
@@ -179,9 +180,9 @@ for planet in planet_data.keys():
 P = {}
 Pref = 1000.
 
-P["H2O"] = np.linspace(1000.,5000.,10)
-P["NH3"] = np.linspace(400.,1000.,10)
-P["CH4"] = np.linspace(1000.,4000.,10)
+P["H2O"] = np.arange(1000.,8000.,500.)
+P["NH3"] = np.arange(400.,1000.,100.)
+P["CH4"] = np.arange(600.,2000.,100.)
 
 ## x, y, gamma, vT and chi are dictionaries which are organized as follows:
 ## [Variable] - either x, y, gamma or chi^2 of the fit
@@ -212,6 +213,10 @@ for species in spec_data.keys():
 	y[species] = {}
 	gamma[species] = {}
 	chi[species] = {}
+	
+	if not Pref in P[species]:
+		P[species] = np.append(P[species],Pref)
+
 	
 	for planet in planet_data.keys():
 		print("\tPlanet: %s"%(planet))
@@ -294,6 +299,90 @@ for species in spec_data.keys():
 			x[species][planet][phase] = 10.**par[0]
 			y[species][planet][phase] = par[1]
 
+## Initialize LateX
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+plt.rcParams["text.latex.preamble"].append(r'\usepackage{amsmath}')
+
+## vT vs P plot for Neptune CH4
+pltspec = "H2O"
+pltplanet = "Jupiter"
+pltphase = "snow"
+
+Pvals = np.sort(P[pltspec][::2])
+
+plt.rc('axes', prop_cycle=(cycler('color', ['r', 'g', 'b', 'k','c','m'])))
+
+## Initialize a figure
+fig1 = plt.figure()
+ax1 = fig1.add_subplot(111)
+vTp = vT[pltspec][pltplanet][pltphase]
+
+for pltP in Pvals:
+	## Plot the vT points for the given plot paramter
+	#ax1.plot(vTp["D"]*1000.,vTp[pltP],'--')
+
+	## Get the fitted curve for the plot paramter
+	fitted = x[pltspec][pltplanet][pltphase]*(vTp["D"]**y[pltspec][pltplanet][pltphase])*(Pref/pltP)**gamma[pltspec][pltplanet][pltphase]
+	ax1.plot(vTp["D"]*1000.,fitted,label=r"P = %d mbar"%pltP)
+	
+ax1.set_xlabel(r"Diameter (mm)")
+ax1.set_ylabel(r"Terminal velocity (m s$^{-1}$)")
+plt.legend(loc='upper right')
+
+
+## Create a multiple plot
+latexspec = {"H2O":"H$_{2}$O","NH3":"NH$_{3}$"}
+fig2 = plt.figure()
+ax2 = fig2.add_subplot(211)
+
+## Do Jupiter
+for spec in ["H2O","NH3"]:
+	vTp = vT[spec]["Jupiter"]["snow"]
+	xi = x[spec]["Jupiter"]["snow"]
+	yi = y[spec]["Jupiter"]["snow"]
+	
+	D = vTp["D"]
+	
+	fit = xi*(D**yi)
+	
+	ax2.plot(D, fit, label = r"%s - %s"%(latexspec[spec], "Snow"))
+plt.legend(loc='upper right')	
+## Do Saturn
+
+ax3 = fig2.add_subplot(212)
+for spec in ["H2O","NH3"]:
+	vTp = vT[spec]["Saturn"]["snow"]
+	xi = x[spec]["Saturn"]["snow"]
+	yi = y[spec]["Saturn"]["snow"]
+	
+	D = vTp["D"]
+	
+	fit = xi*(D**yi)
+	
+	ax3.plot(D, fit, label = r"%s - %s"%(latexspec[spec], "Snow"))
+plt.legend(loc='upper right')
+
+fig3 = plt.figure()
+	
+## Do Uranus
+
+ax4 = fig3.add_subplot(111)
+for planet in ["Uranus","Neptune"]:
+	vTp = vT["CH4"][planet]["snow"]
+	xi = x["CH4"][planet]["snow"]
+	yi = y["CH4"][planet]["snow"]
+	
+	D = vTp["D"]
+	
+	fit = xi*(D**yi)
+	
+	ax4.plot(D, fit, label = r"%s - %s"%(planet, "Snow"))
+plt.legend(loc='upper right')
+
+plt.show()
+
+''' Do Not Need This
 ## Plot parameters	
 pltspec = "CH4"
 pltplanet = "Neptune"
@@ -322,10 +411,12 @@ ax1.plot(vTp["D"]*1000.,fitted,'k-')
 ## Annotate with R2 text
 ## The text function displays the text at the relative axis coordinate (first two numbers)
 ## So 0, 0 is the bot-left and 1,1 is the top-right and 0.5, 0.5 is in the middle of the plot
-ax1.text(0.1,0.5,"R2: %.4f"%(R2),fontsize=12,transform=ax1.transAxes)
+ax1.text(0.1,0.5,r"$R^2: %.4f$"%(R2),fontsize=15,transform=ax1.transAxes)'''
 
 
-''' Do not need to print values anymore
+
+
+## Do not need to print values anymore
 printplanet = "Neptune"
 for species in spec_data.keys():
 	if(spec_data[species]["docalc"] == False):
@@ -339,4 +430,6 @@ for species in spec_data.keys():
 		print("gamma: %.4f"%(gamma[species][printplanet][phase]))
 		print()
 	print()
-plt.show()'''
+##'''
+
+plt.show()

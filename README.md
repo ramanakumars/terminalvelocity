@@ -45,3 +45,7 @@ Terminal velocity calculations for Jupiter cloud modelling
 
 **07 Oct 2016** *ramana*
 > *plot* Added H2, He and CH4 ratios and created non-condensing species data
+
+> *plot* Updated Jupiter data
+
+> *plot* Added other plots
