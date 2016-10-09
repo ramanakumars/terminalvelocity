@@ -49,3 +49,10 @@ Terminal velocity calculations for Jupiter cloud modelling
 > *plot* Updated Jupiter data
 
 > *plot* Added other plots
+
+**08 Oct 2016** *ramana*
+> *plot* Added planet specific species
+
+
+**09 Oct 2016** *ramana*
+> *plot* Added Venus and H2SO4

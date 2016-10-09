@@ -39,35 +39,46 @@ def dynvisc(planet):
 	## planet_data is global dictionary of planet parameters
 	## planet is string with the name of the planet
 	
-	global planet_data
-	## Fetch H2 and He concentrations
-	x1 = planet_data[planet]["xi"]["H2"]
-	x2 = planet_data[planet]["xi"]["He"]
 	
-	n = 64
-	viscx = np.zeros(n+1)
-	viscy = np.zeros(n+1)
-	for i in range(n+1):
-		temperature = 100. + i*(500.-100.)/n;
+	## Titan viscosity from Lorenz (1993) Equation A1
+	
+	## Venus viscosity from Petropoulos 1988
+	
+	global planet_data
+	
+	if(planet == "Titan"):
+		return([1.718e-5 - 5.1e-8*273.,5.1e-8])
+	elif(planet == "Venus"):
+		return([4.46e-6, 3.64e-8])
+	else:
+		## Fetch H2 and He concentrations
+		x1 = planet_data[planet]["xi"]["H2"]
+		x2 = planet_data[planet]["xi"]["He"]
+		
+		n = 64
+		viscx = np.zeros(n+1)
+		viscy = np.zeros(n+1)
+		for i in range(n+1):
+			temperature = 100. + i*(500.-100.)/n;
 
-		n1  = 90.6*np.power(temperature/300.,.6658);
-		n1  = n1/(1.+4./temperature);                # viscosity of H_2 in micropoise
-		n2  = 191.6*np.power(temperature/300.,.7176);
-		n2  = n2/(1.-11.4/temperature);              # viscosity of He in micropoise
+			n1  = 90.6*np.power(temperature/300.,.6658);
+			n1  = n1/(1.+4./temperature);                # viscosity of H_2 in micropoise
+			n2  = 191.6*np.power(temperature/300.,.7176);
+			n2  = n2/(1.-11.4/temperature);              # viscosity of He in micropoise
 
-		q1  = 32.3*(1.+4./temperature)*np.power(300./temperature,.1658);
-		q2  = 21.5*(1.-11.4/temperature)*np.power(300./temperature,.2176);
-		q3  = (np.sqrt(q1)+np.sqrt(q2))/2.;
-		q3  = q3*q3;
+			q1  = 32.3*(1.+4./temperature)*np.power(300./temperature,.1658);
+			q2  = 21.5*(1.-11.4/temperature)*np.power(300./temperature,.2176);
+			q3  = (np.sqrt(q1)+np.sqrt(q2))/2.;
+			q3  = q3*q3;
 
-		r1  = 1.+.7967*(x2/x1)*(q3/q1);
-		r2  = 1.+.5634*(x1/x2)*(q3/q2);
-		nu  = n1/r1 + n2/r2 ;                  # viscosity of atmosphere in micropoise
-		nu  = nu*1.e-7;                        # viscosity of atmosphere in kg/m/s
+			r1  = 1.+.7967*(x2/x1)*(q3/q1);
+			r2  = 1.+.5634*(x1/x2)*(q3/q2);
+			nu  = n1/r1 + n2/r2 ;                  # viscosity of atmosphere in micropoise
+			nu  = nu*1.e-7;                        # viscosity of atmosphere in kg/m/s
 
-		viscx[i] = temperature;
-		viscy[i] = nu;
-	return(least_squares(viscx,viscy))
+			viscx[i] = temperature;
+			viscy[i] = nu;
+		return(least_squares(viscx,viscy))
 
 def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 	## Terminal velocity calculation
@@ -87,7 +98,6 @@ def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 	
 	dynvisc_corr = planet_data[planet]["mucorr"]
 	dynvisc = dynvisc_corr[0] + dynvisc_corr[1]*T
-		
 	if(phase == "rain"):
 		rho_liq = spec_data[species]["rho_liq"]
 		W = np.log10((4. * (D**3.)*rho_air*g*(rho_liq - rho_air))/(3.*dynvisc**2.))
@@ -128,16 +138,31 @@ planet_data["Saturn"] = {"g":10.5, "xi":  {"H2":0.96,"He": 0.04}, "datfile": "sa
 planet_data["Uranus"] = {"g":8.69, "xi": {"H2":0.83,"He": 0.15,"CH4": 0.03}, "datfile": "uranus_data.csv", "Pref": 1000.}
 planet_data["Neptune"] = {"g":11.15, "xi": {"H2":0.79,"He": 0.18,"CH4": 0.03}, "datfile": "neptune_data.csv", "Pref": 1000.}
 
+## Titan data from Lorenz 1993
+planet_data["Titan"] = {"g":1.352, "xi": {"N2":0.942,"H2": 0.001,"CH4": 0.056}, "datfile": "titan_data.csv", "Pref": 1000.}
+
+## Venus data from Basilevsky and Head 2003
+planet_data["Venus"] = {"g":8.87, "xi": {"CO2":0.965,"N2": 0.0035}, "datfile": "venus_data.csv", "Pref": 1000.}
+
 ## Species arrays
 ## ant_ice and ant_liq are unnecessary and exist in case we need them for another calculation
 spec_data = {}
-spec_data["H2O"] = {"mass":18., "rho_ice": 917.0, "rho_liq": 1000., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "tp": 273.16, "docalc":True}
-spec_data["NH3"] = {"mass":17., "rho_ice": 786.8, "rho_liq":  733., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "tp": 195.20, "docalc":True}
+spec_data["H2O"] = {"mass":18., "rho_ice": 917.0, "rho_liq": 1000., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "tp": 273.16, "docalc":True,"planet":["Jupiter","Saturn"]}
+spec_data["NH3"] = {"mass":17., "rho_ice": 786.8, "rho_liq":  733., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "tp": 195.20, "docalc":True,"planet":["Jupiter","Saturn"]}
 
 ## From Uranus edited by Jay T. Bergstralh, Ellis D. Miner, Mildred ISBN: 978-0816512089 and #http://encyclopedia.airliquide.com/encyclopedia.asp?GasID=41#GeneralData
-spec_data["CH4"] = {"mass":16., "rho_ice": 500., "rho_liq":  656., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "tp": 90.54, "docalc":True} 
+spec_data["CH4"] = {"mass":16., "rho_ice": 500., "rho_liq":  656., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "tp": 90.54, "docalc":True,"planet":["Titan","Uranus","Neptune"]}
+
+## Ethane is turned off for lack of densities
+spec_data["C2H6"] = {"mass":30., "rho_ice": 500., "rho_liq":  656., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "tp": 90.54, "docalc":False,"planet":["Titan"]}
+
+spec_data["H2SO4"] = {"mass":98., "rho_ice": 500., "rho_liq":  1840., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "tp": 90.54, "docalc":True,"planet":["Venus"]}
+
+## Non-condensing species
 spec_data["H2"] = {"mass": 2., "docalc": False}
 spec_data["He"] = {"mass": 4., "docalc": False}
+spec_data["CO2"] = {"mass": 38., "docalc": False}
+spec_data["N2"] = {"mass": 28., "docalc": False}
 
 
 ## Setup the T-P profile, dyn. visc. data and atmospheric data
@@ -183,6 +208,7 @@ Pref = 1000.
 P["H2O"] = np.arange(1000.,8000.,500.)
 P["NH3"] = np.arange(400.,1000.,100.)
 P["CH4"] = np.arange(600.,2000.,100.)
+P["H2SO4"] = np.arange(600., 2000., 100.)
 
 ## x, y, gamma, vT and chi are dictionaries which are organized as follows:
 ## [Variable] - either x, y, gamma or chi^2 of the fit
@@ -214,11 +240,9 @@ for species in spec_data.keys():
 	gamma[species] = {}
 	chi[species] = {}
 	
-	if not Pref in P[species]:
-		P[species] = np.append(P[species],Pref)
-
-	
 	for planet in planet_data.keys():
+		if(planet not in spec_data[species]["planet"]):
+			continue
 		print("\tPlanet: %s"%(planet))
 		vT[species][planet] = {}
 		x[species][planet] = {}
@@ -230,6 +254,15 @@ for species in spec_data.keys():
 			print("\t\tPhase: %s"%(phase))
 			## setup particle sizes
 			## different sizes for each phase
+			
+			if(planet=="Titan"):
+				Prange = np.linspace(np.min(P[species]),np.max(planet_data[planet]["Prange"]),100.)
+			else:
+				Prange = P[species]
+			
+			if not Pref in Prange:
+				Prange = np.append(Prange,Pref)
+
 			
 			if(phase == "rain"):
 				D = np.linspace(200.e-6, 5.e-3, 1000.)
@@ -244,23 +277,23 @@ for species in spec_data.keys():
 			print("\t\t\tCalculating terminal velocity profile")
 			
 			## Initiaze the vT array with empty array
-			for p in P[species]:
+			for p in Prange:
 				vT[species][planet][phase][p] = np.zeros(len(D))
 			
 			
 			## This is formatting the vT data to save as .csv
 			## In case we need to see the raw data
-			vT_dat = np.zeros((len(D),2*len(P[species])+2))
+			vT_dat = np.zeros((len(D),2*len(Prange)+2))
 			header = ""
-			for i,p in enumerate(P[species]):
+			for i,p in enumerate(Prange):
 				vT_d = vT_calc(planet,species, phase, p, D, planet_data, spec_data)
-				vT[species][planet][phase][P[species][i]] = vT_d
+				vT[species][planet][phase][Prange[i]] = vT_d
 				header = header + "P=%i,vT,"%(int(p))				
 				vT_dat[:,2*i] = D
 				vT_dat[:,2*i+1] = vT_d
 			
 			## save vT data to csv
-			outname = "%s_%s_%s.csv"%(planet,species,phase)
+			outname = "data\%s_%s_%s.csv"%(planet,species,phase)
 			np.savetxt(outname,vT_dat,header=header,delimiter=",")
 			
 			gamma_vals = []			
@@ -268,7 +301,7 @@ for species in spec_data.keys():
 			## Loop through each pressure to calculate the gamma fit for (P0/P)
 			## log(vT(P)/vT(P0)) = gamma*np.log(P0/P)
 			
-			for p in P[species]:
+			for p in Prange:
 				if(p != Pref):
 					gamma_p = np.average(np.log(vT[species][planet][phase][p]/vT[species][planet][phase][Pref])/np.log(Pref/p))
 					gamma_vals.append(gamma_p)
@@ -284,11 +317,11 @@ for species in spec_data.keys():
 			zData = []
 			
 			print("\t\tCreating array to fit")
-			for i in range(len(P[species])):
+			for i in range(len(Prange)):
 				for j in range(len(D)):
-					#index = (i*len(P[species])) + j
+					#index = (i*len(Prange)) + j
 					xData.append(D[j])
-					zData.append(vT[species][planet][phase][P[species][i]][j]/((Pref/P[species][i])**gamma[species][planet][phase]))
+					zData.append(vT[species][planet][phase][Prange[i]][j]/((Pref/Prange[i])**gamma[species][planet][phase]))
 			xData = np.asarray(xData)
 			zData = np.asarray(zData)
 
@@ -305,9 +338,9 @@ plt.rc('font', family='serif')
 plt.rcParams["text.latex.preamble"].append(r'\usepackage{amsmath}')
 
 ## vT vs P plot for Neptune CH4
-pltspec = "H2O"
-pltplanet = "Jupiter"
-pltphase = "snow"
+pltspec = "H2SO4"
+pltplanet = "Venus"
+pltphase = "rain"
 
 Pvals = np.sort(P[pltspec][::2])
 
@@ -330,7 +363,7 @@ ax1.set_xlabel(r"Diameter (mm)")
 ax1.set_ylabel(r"Terminal velocity (m s$^{-1}$)")
 plt.legend(loc='upper right')
 
-
+'''
 ## Create a multiple plot
 latexspec = {"H2O":"H$_{2}$O","NH3":"NH$_{3}$"}
 fig2 = plt.figure()
@@ -379,9 +412,7 @@ for planet in ["Uranus","Neptune"]:
 	
 	ax4.plot(D, fit, label = r"%s - %s"%(planet, "Snow"))
 plt.legend(loc='upper right')
-
-plt.show()
-
+'''
 ''' Do Not Need This
 ## Plot parameters	
 pltspec = "CH4"
@@ -417,9 +448,11 @@ ax1.text(0.1,0.5,r"$R^2: %.4f$"%(R2),fontsize=15,transform=ax1.transAxes)'''
 
 
 ## Do not need to print values anymore
-printplanet = "Neptune"
+printplanet = "Venus"
 for species in spec_data.keys():
 	if(spec_data[species]["docalc"] == False):
+		continue
+	if(printplanet not in spec_data[species]["planet"]):
 		continue
 	print(species)
 	print("----------------")
