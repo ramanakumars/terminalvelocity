@@ -101,7 +101,7 @@ def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 		vT = np.zeros(len(D))
 		k = np.zeros(len(D))
 		B = np.zeros(len(D))
-
+		dmin = np.argmin((D - 5.e-3)**2.)
 		for i, di in enumerate(D):
 			rho_liq = spec_data[species]["rho_liq"]
 			W = np.log10((4. * (di**3.)*rho_air*g*(rho_liq - rho_air))/(3.*dynvisc**2.))
@@ -113,11 +113,11 @@ def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 			
 			vT[i] = (dynvisc*Re)/(di*rho_air)
 			
-			if(planet == "ExoHJ" and p == 1500 and di == D[-1]):
-				print(Re, dynvisc, k[i], rho_air, vT[i])
+			if(planet == "ExoHJ" and p == 1500 and i == dmin):
+				print(Re, dynvisc, k[i], rho_air, vT[i], di)
 	
-			elif(planet == "Jupiter" and p == 1000 and di == D[-1]):
-				print(Re, dynvisc, k[i], rho_air, vT[i])
+			elif(planet == "Jupiter" and p == 1000 and i == dmin):
+				print(Re, dynvisc, k[i], rho_air, vT[i], di)
 				#plt.plot(D*1000.,k,'-')
 		return vT
 	elif(phase == "snow"):
@@ -166,7 +166,7 @@ planet_data["Jupiter"]  = {"g": 22.31, "xi": {"H2":0.864,"He":0.136}, "datfile":
 planet_data["Saturn"] = {"g":10.5, "xi":  {"H2":0.96,"He": 0.04}, "datfile": "saturn_data.csv", "Pref": 1000.}
 
 ## Titan data from Lorenz 1993
-planet_data["Titan"] = {"g":1.352, "xi": {"N2":0.942,"H2": 0.001,"CH4": 0.056}, "datfile": "titan_data.csv", "Pref": 1000.}
+#planet_data["Titan"] = {"g":1.352, "xi": {"N2":0.942,"H2": 0.001,"CH4": 0.056}, "datfile": "titan_data.csv", "Pref": 1000.}
 
 ## Venus data from Basilevsky and Head 2003
 planet_data["Venus"] = {"g":8.87, "xi": {"CO2":0.965,"N2": 0.0035}, "datfile": "venus_data.csv", "Pref": 1000.}
@@ -182,11 +182,11 @@ planet_data["ExoBD"] = {"g":25., "xi": {"H2":0.96,"He": 0.04}, "datfile": "exo_d
 ## ant_ice and ant_liq are unnecessary and exist in case we need them for another calculation
 spec_data = {}
 
-spec_data["CH4"] = {"mass":16., "sigma": 15.*1.e-3, "rho_ice": 100., "rho_liq":  656., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Titan"]}
+#spec_data["CH4"] = {"mass":16., "sigma": 15.*1.e-3, "rho_ice": 100., "rho_liq":  656., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Titan"]}
 
 spec_data["H2O"] = {"mass":18., "sigma": 75.*1.e-3, "rho_ice": 917.0, "rho_liq": 1000., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Jupiter","Saturn","Earth","ExoBD"]}
 
-spec_data["H2SO4"] = {"mass":98., "sigma": 50.*1.e-3, "rho_ice": 100., "rho_liq":  1840., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Venus"]}
+#spec_data["H2SO4"] = {"mass":98., "sigma": 50.*1.e-3, "rho_ice": 100., "rho_liq":  1840., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Venus"]}
 
 spec_data["Fe"] = {"mass":142., "sigma": 1.8,"rho_ice": 100., "rho_liq":  6980., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["ExoHJ"]}
 
