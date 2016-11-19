@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from cycler import cycler
+#from cycler import cycler
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 
@@ -117,11 +117,16 @@ def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 	elif(phase == "ice"):
 		A_Ae = spec_data[species]["A_Ae_"+phase]
 		rho_scale = spec_data[species]["rho_ice"]/spec_data["H2O"]["rho_ice"]
-		m = np.power((D/11.9),2.)*rho_scale
+		m = spec_data[species]["rho_ice"]*((4./3.)*np.pi*(D/2.)**3.)
+		
+		"""
 		X = ((8.*A_Ae*m*rho_air*g)/(np.pi*dynvisc**2))
 		Re = 8.5*(np.sqrt(1. + 0.1519*np.sqrt(X)) - 1.)**2.
-
-		return ((1./D)*(dynvisc*Re)/(rho_air))
+		"""
+		
+		gforce = m*g
+		vT = (gforce)/(6.*np.pi*dynvisc*(D/2.))
+		return vT
 
 def cD_rain(planet,p, species):
 	global planet_data, spec_data
@@ -148,21 +153,21 @@ def vT_fit_old(x, a, b, c):
 global planet_data, spec_data
 ## Planet arrays
 planet_data = {}
-planet_data["Jupiter"]  = {"g": 22.31, "xi": {"H2":0.75,"He":0.25}, "datfile": "jupiter_data.csv", "Pref": 1000.}
-planet_data["Saturn"] = {"g":10.5, "xi":  {"H2":0.96,"He": 0.04}, "datfile": "saturn_data.csv", "Pref": 1000.}
+#planet_data["Jupiter"]  = {"g": 22.31, "xi": {"H2":0.75,"He":0.25}, "datfile": "jupiter_data.csv", "Pref": 1000.}
+#planet_data["Saturn"] = {"g":10.5, "xi":  {"H2":0.96,"He": 0.04}, "datfile": "saturn_data.csv", "Pref": 1000.}
 
 ## Uranus and Neptune atmos data from Encrenaz 2004 DOI: 10.1007/s11214-005-1950-6
 planet_data["Uranus"] = {"g":8.69, "xi": {"H2":0.83,"He": 0.15,"CH4": 0.03}, "datfile": "uranus_data.csv", "Pref": 1000.}
 planet_data["Neptune"] = {"g":11.15, "xi": {"H2":0.79,"He": 0.18,"CH4": 0.03}, "datfile": "neptune_data.csv", "Pref": 1000.}
 
 ## Titan data from Lorenz 1993
-planet_data["Titan"] = {"g":1.352, "xi": {"N2":0.942,"H2": 0.001,"CH4": 0.056}, "datfile": "titan_data.csv", "Pref": 1000.}
+#planet_data["Titan"] = {"g":1.352, "xi": {"N2":0.942,"H2": 0.001,"CH4": 0.056}, "datfile": "titan_data.csv", "Pref": 1000.}
 
 ## Venus data from Basilevsky and Head 2003
-planet_data["Venus"] = {"g":8.87, "xi": {"CO2":0.965,"N2": 0.0035}, "datfile": "venus_data.csv", "Pref": 1000.}
+#planet_data["Venus"] = {"g":8.87, "xi": {"CO2":0.965,"N2": 0.0035}, "datfile": "venus_data.csv", "Pref": 1000.}
 
 ## Exoplanet data from Wakeford et al. 2016
-planet_data["Exo"] = {"g":10., "xi": {"H2":0.96,"He": 0.04}, "datfile": "exo_data.csv", "Pref": 1000.}
+#planet_data["Exo"] = {"g":10., "xi": {"H2":0.96,"He": 0.04}, "datfile": "exo_data.csv", "Pref": 1000.}
 
 ## Species arrays
 ## ant_ice and ant_liq are unnecessary and exist in case we need them for another calculation
@@ -172,8 +177,8 @@ spec_data["NH3"] = {"mass":17., "rho_ice": 786.8, "rho_liq":  733., "A_Ae_snow":
 spec_data["NH4SH"] = {"mass":51., "rho_ice": (51./18.)*917.8, "rho_liq":  100., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Jupiter","Saturn"]}
 
 ## From Uranus edited by Jay T. Bergstralh, Ellis D. Miner, Mildred ISBN: 978-0816512089 and #http://encyclopedia.airliquide.com/encyclopedia.asp?GasID=41#GeneralData
-spec_data["CH4"] = {"mass":16., "rho_ice": 100., "rho_liq":  656., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Titan","Uranus","Neptune"]}
-spec_data["H2S"] = {"mass":34., "rho_ice": 485., "rho_liq":  100., "A_Ae_snow": 1.05, "A_Ae_ice": 1.,  "docalc":True,"planet":["Uranus","Neptune"]}
+spec_data["CH4"] = {"mass":16., "rho_ice": 430., "rho_liq":  656., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Titan","Uranus","Neptune"]}
+#spec_data["H2S"] = {"mass":34., "rho_ice": 485., "rho_liq":  100., "A_Ae_snow": 1.05, "A_Ae_ice": 1.,  "docalc":True,"planet":["Uranus","Neptune"]}
 
 ## Ethane is turned off for lack of densities
 spec_data["C2H6"] = {"mass":30., "rho_ice": 100., "rho_liq":  656., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":False,"planet":["Titan"]}
@@ -231,17 +236,8 @@ for planet in planet_data.keys():
 P = {}
 Pref = 100.
 
-P["H2O"] = np.arange(1000.,5000.,100.)
-P["NH3"] = np.arange(400.,1000.,100.)
-P["CH4"] = np.arange(600.,2000.,100.)
-P["NH4SH"] = {}
-P["NH4SH"]["Jupiter"] = np.arange(2000.,4000.,100.)
-P["NH4SH"]["Saturn"] = np.arange(6000.,8000.,100.)
-P["H2S"] = {}
-P["H2S"]["Uranus"] = np.arange(3000.,5000.,100.)
-P["H2S"]["Neptune"] = np.arange(8000.,12000.,100.)
-P["H2SO4"] = np.arange(600., 2000., 100.)
-P["Fe"] = np.arange(1., 100., 5.)
+P["CH4"] = np.asarray([30., 40.,50., 60., 70., 100., 1000., 1100., 1200., 1300., 2500., 2600., 2700., 2800.,\
+	2900., 3000.])
 
 ## x, y, gamma, vT and chi are dictionaries which are organized as follows:
 ## [Variable] - either x, y, gamma or chi^2 of the fit
@@ -265,7 +261,7 @@ chi = {}
 for species in spec_data.keys():
 	if(spec_data[species]["docalc"] == False):
 		continue
-	print("\nSpecies: %s"%(species))
+	#print("\nSpecies: %s"%(species))
 	vT[species] = {}
 	
 	x[species] = {}
@@ -284,7 +280,7 @@ for species in spec_data.keys():
 		chi[species][planet] = {}
 		
 		for phase in ["rain","ice","snow"]:
-			print("\t\tPhase: %s"%(phase))
+			#print("\t\tPhase: %s"%(phase))
 			## setup particle sizes
 			## different sizes for each phase
 			
@@ -304,7 +300,7 @@ for species in spec_data.keys():
 			if(phase == "rain"):
 				D = np.linspace(200.e-6, 5.e-3, 1000.)
 			elif(phase == "ice"):
-				D = np.linspace(1.e-6, 500.e-6, 1000.)
+				D = np.asarray([0.08,0.1,0.11,0.19,0.2,0.21,0.59,0.60,0.61, 2.])*1.e-6
 			elif(phase == "snow"):
 				D = np.linspace(0.5e-3, 5.e-3, 1000.)
 				
@@ -371,323 +367,21 @@ for species in spec_data.keys():
 			x[species][planet][phase] = 10.**par[0]
 			y[species][planet][phase] = par[1]
 
-			
-print("Doing plots")
-## Initialize LateX
-plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
-plt.rc('font', size='14')
-plt.rcParams["text.latex.preamble"].append(r'\usepackage{amsmath}')
+printplanet = "Uranus"
+printspecies = "CH4"
+print("\n\nP(mbar) \t D (mu m) \t m (kg) \t V (mu m/s) \n")
+print("-------------------------------------------------------------\n")
+for i, Pi in enumerate(P["CH4"]):
+	if(Pi < 1000.):
+		Di = 1
+	elif(Pi < 2000.):
+		Di = 4
+	else:
+		Di = 7
+	vT_dat = vT[printspecies][printplanet]["ice"]
+	print("%4.f \t\t %.1f \t\t %.2e \t %.2f \n"%(Pi,vT_dat["D"][Di]*1.e6,430.*(4./3.)*np.pi*(vT_dat["D"][Di]/2.)**3.,vT_dat[Pi][Di]*1.e6))
+	if(Pi in [100., 1300.]):
+		print ("-----------------------------------------------------------\n")
+print("%4.f \t\t %.1f \t\t %.2e \t %.2f \n"%(Pi,vT_dat["D"][-1]*1.e6,430.*(4./3.)*np.pi*(vT_dat["D"][-1]/2.)**3.,vT_dat[Pi][-1]*1.e6))
 
 
-params = {'xtick.labelsize':'xx-large','ytick.labelsize':'xx-large'}
-plt.rcParams.update(params)
-
-plt.rc('axes', prop_cycle=(cycler('color', ['r', 'g', 'b', 'k','c','m'])))
-
-## Define whitespaces
-left = 0.1
-right = 0.99
-top = 0.98
-bottom = 0.1
-wspace = 0.08
-hspace = 0.17
-
-## textsizes
-textsize = 28
-labelsize = 28
-
-## x, y pos
-titlex = 0.4
-titley = 0.95
-
-## textposition
-textpos = (0.05, 0.85)
-
-## Initialize a figure
-if(True):
-	## vT vs P plot for Jupiter CH4
-	pltspec = "H2O"
-	pltplanet = "Jupiter"
-	pltphase = "snow"
-
-	Pvals = np.sort(P[pltspec][::10])
-
-
-	fig1 = plt.figure(figsize=(10,10))
-	ax1 = fig1.add_subplot(111)
-	vTp = vT[pltspec][pltplanet][pltphase]
-
-	colors = ['r','g','b','k','c','m']
-
-	for i,pltP in enumerate(Pvals):
-		## Plot the vT points for the given plot paramter
-		ax1.plot(vTp["D"]*1000.,vTp[pltP],'--',color=colors[i])
-
-		## Get the fitted curve for the plot paramter
-		fitted = x[pltspec][pltplanet][pltphase]*(vTp["D"]**y[pltspec][pltplanet][pltphase])*(Pref/pltP)**gamma[pltspec][pltplanet][pltphase]
-		
-		## Calculate R^2 statistic
-		sstot = np.sum((vTp[pltP] - np.average(vTp[pltP]))**2.)
-		ssres = np.sum((vTp[pltP] - fitted)**2.)
-		R2 = 1. - ssres/sstot
-		
-		ax1.plot(vTp["D"]*1000.,fitted,color=colors[i],label=r"P = $%d$ bar - $R^{2} = %.3f$"%(pltP/1000.,R2))
-	plt.grid()
-	plt.subplots_adjust(bottom = bottom, top = top, right = right, left = left, wspace = wspace, hspace = hspace)
-	ax1.set_xlabel(r"Diameter [mm]",fontsize=labelsize)
-	ax1.set_ylabel(r"Terminal velocity [m s$^{-1}$]",fontsize=labelsize)
-	ax1.set_xlim((0.9*np.min(vTp["D"]*1000.), 1.05*np.max(vTp["D"]*1000.)))
-	plt.legend(loc='lower right',fontsize="xx-large")
-	ax1.text(titlex,titley,"Fig. 2",fontsize=textsize,transform=ax1.transAxes)
-	plt.savefig('plots/jup_h2o_vT_P.png')
-
-
-if(True):
-	## Create a multiple plot
-	latexspec = {"H2O":"H$_{2}$O","NH3":"NH$_{3}$","NH4SH":"NH$_{4}$SH"}
-	fig2 = plt.figure(figsize=(10,10))
-	ax2 = fig2.add_subplot(111)
-
-	'''
-	## Do H2O
-	for planet in ["Jupiter","Saturn"]:
-		vTp = vT["H2O"][planet]["snow"]
-		xi = x["H2O"][planet]["snow"]
-		yi = y["H2O"][planet]["snow"]
-		
-		D = vTp["D"]
-		
-		fit = xi*(D**yi)
-		
-		ax2.plot(D*1000., fit, label = r"%s - H$_{2}$O %s"%(planet, "snow"))
-		ax2.set_xlim((0.9*np.min(D*1000.), 1.05*np.max(D*1000.)))
-	plt.subplots_adjust(bottom = bottom, top = top, right = right, left = left, wspace = wspace, hspace = hspace)
-	plt.legend(loc='upper left')
-	ax2.text(textpos[0],textpos[1],"(a)",fontsize=textsize,transform=ax2.transAxes)
-	ax2.set_xlabel(r"Diameter [mm]",fontsize=labelsize)
-	ax2.set_ylabel(r"Terminal velocity [m s$^{-1}$]",fontsize=labelsize)
-
-	## Do NH3
-	for planet in ["Jupiter","Saturn"]:
-		vTp = vT["NH3"][planet]["snow"]
-		xi = x["NH3"][planet]["snow"]
-		yi = y["NH3"][planet]["snow"]
-		
-		D = vTp["D"]
-		
-		fit = xi*(D**yi)
-		
-		ax2.plot(D*1000., fit, '--',label = r"%s - NH$_{3}$ %s"%(planet, "snow"))
-		ax2.set_xlim((0.9*np.min(D*1000.), 1.05*np.max(D*1000.)))
-		
-	## Do NH4SH
-	for planet in ["Jupiter","Saturn"]:
-		vTp = vT["NH4SH"][planet]["snow"]
-		xi = x["NH4SH"][planet]["snow"]
-		yi = y["NH4SH"][planet]["snow"]
-		
-		D = vTp["D"]
-		
-		fit = xi*(D**yi)
-		
-		ax2.plot(D*1000., fit, '-.',label = r"%s - NH$_{4}$SH %s"%(planet, "snow"))
-		ax2.set_xlim((0.9*np.min(D*1000.), 1.05*np.max(D*1000.)))
-	'''
-	colors = ['r','g','b']
-	for i,species in enumerate(["H2O","NH3","NH4SH"]):
-		vTpJup = vT[species]["Jupiter"]["snow"]
-		xiJup = x[species]["Jupiter"]["snow"]
-		yiJup = y[species]["Jupiter"]["snow"]
-		
-		DJup = vTpJup["D"]
-		
-		fitJup = xiJup*(DJup**yiJup)
-		
-		ax2.plot(DJup*1000., fitJup, '-',color=colors[i],label = r"%s - %s %s"%("Jupiter",latexspec[species],"snow"))
-	
-	for i,species in enumerate(["H2O","NH3","NH4SH"]):
-		vTpSat = vT[species]["Saturn"]["snow"]
-		xiSat = x[species]["Saturn"]["snow"]
-		yiSat = y[species]["Saturn"]["snow"]
-		
-		DSat = vTpSat["D"]
-		
-		fitSat = xiSat*(DSat**yiSat)
-		
-		ax2.plot(DSat*1000., fitSat, '--',color=colors[i],label = r"%s - %s %s"%("Saturn",latexspec[species],"snow"))
-		
-	plt.subplots_adjust(bottom = 0.08, top = top, right = right, left = left, wspace = wspace, hspace = hspace)
-	plt.grid()
-	ax2.set_xlim((0.9*np.min(DJup*1000.), 1.05*np.max(DJup*1000.)))
-	ax2.set_xlabel(r"Diameter [mm]",fontsize=labelsize)
-	ax2.set_ylabel(r"Terminal velocity [m s$^{-1}$]",fontsize=labelsize)
-	plt.legend(loc='lower right',fontsize="large")
-	ax2.text(titlex, titley,"Fig. 4",fontsize=textsize,transform=ax2.transAxes)
-#	ax2.set_xlabel(r"Diameter [mm]",fontsize=labelsize)
-	plt.savefig('plots/jup_sat_h2o_nh3.png')
-	
-## Do Uranus and Neptune
-if(True):
-	fig3 = plt.figure(figsize=(10,10))
-	ax4 = fig3.add_subplot(111)
-	latexspec = {"CH4":"CH$_{4}$","H2S":"H$_{2}$S"}
-	
-	for i,species in enumerate(["CH4","H2S"]):
-		vTpUra = vT[species]["Uranus"]["snow"]
-		xiUra = x[species]["Uranus"]["snow"]
-		yiUra = y[species]["Uranus"]["snow"]
-		
-		DUra = vTpUra["D"]
-		
-		fitUra = xiUra*(DUra**yiUra)
-		
-		ax4.plot(DUra*1000., fitUra, '-',color=colors[i],label = r"%s - %s %s"%("Uranus",latexspec[species],"snow"))
-	
-	for i,species in enumerate(["CH4","H2S"]):
-		vTpNep = vT[species]["Neptune"]["snow"]
-		xiNep = x[species]["Neptune"]["snow"]
-		yiNep = y[species]["Neptune"]["snow"]
-		
-		DNep = vTpNep["D"]
-		
-		fitNep = xiNep*(DNep**yiNep)
-		
-		ax4.plot(DNep*1000., fitNep, '--',color=colors[i],label = r"%s - %s %s"%("Neptune",latexspec[species],"snow"))
-		
-	plt.subplots_adjust(bottom = bottom, top = top, right = right, left = left, wspace = wspace, hspace = hspace)
-	plt.grid()
-	ax4.set_xlim((0.9*np.min(DUra*1000.), 1.05*np.max(DUra*1000.)))
-	ax4.set_xlabel(r"Diameter [mm]",fontsize=labelsize)
-	ax4.set_ylabel(r"Terminal velocity [m s$^{-1}$]",fontsize=labelsize)
-	plt.legend(loc='lower right',fontsize="xx-large")
-	ax4.text(titlex,titley,"Fig. 5",fontsize=textsize,transform=ax4.transAxes)
-	plt.subplots_adjust(bottom = bottom, top = top, right = right, left = left, wspace = wspace, hspace = hspace)
-	plt.savefig('plots/uranus_neptune_h2s_ch4.png')
-## Do Venus
-## 1 bat at ~50km
-if(False):
-	fig4 = plt.figure(figsize=(10,10))
-	ax6 = fig4.add_subplot(111)
-	vTp = vT["H2SO4"]["Venus"]["rain"]
-	xi = x["H2SO4"]["Venus"]["rain"]
-	yi = y["H2SO4"]["Venus"]["rain"]
-	
-	D = vTp["D"]
-	
-	fit = xi*(D**yi)
-	
-	ax6.plot(D*1000., fit, label = r"Venus - H$_{2}$SO$_{4}$ rain")
-	ax6.set_xlabel(r"Diameter [mm]",fontsize=labelsize)
-	ax6.set_ylabel(r"Terminal velocity [m s$^{-1}$]",fontsize=labelsize)
-	plt.legend(loc='upper left')
-## Do Titan
-## 1 bar at ~8.25km
-	vTp = vT["CH4"]["Titan"]["rain"]
-	xi = x["CH4"]["Titan"]["rain"]
-	yi = y["CH4"]["Titan"]["rain"]
-	
-	D = vTp["D"]
-	
-	fit = xi*(D**yi)
-	
-	ax6.plot(D*1000., fit, label = r"Titan - CH$_{4}$ rain")
-
-	ax6.set_xlabel(r"Diameter [mm]",fontsize=labelsize)
-	ax6.set_ylabel(r"Terminal velocity [m s$^{-1}$]",fontsize=labelsize)
-	
-	ax6.set_xlim((0.9*np.min(D*1000.), 1.05*np.max(D*1000.)))
-	
-	plt.legend(loc='upper left')
-	ax6.text(textpos[0],textpos[1],"(e)",fontsize=textsize,transform=ax6.transAxes)
-	plt.grid()
-	plt.subplots_adjust(bottom = bottom, top = top, right = right, left = left, wspace = wspace, hspace = hspace)
-	plt.savefig('plots/venus_titan_rain.png')
-	
-	
-if(False):
-	fig5 = plt.figure(figsize=(10,10))
-	ax7 = fig5.add_subplot(111)
-	vTp = vT["Fe"]["Exo"]["rain"]
-	xi = x["Fe"]["Exo"]["rain"]
-	yi = y["Fe"]["Exo"]["rain"]
-	
-	D = vTp["D"]
-	
-	fit = xi*(D**yi)
-	
-	ax7.plot(D*1000., fit, label = r"Hot Jupiter - Fe rain")
-	ax7.set_xlabel(r"Diameter [mm]",fontsize=labelsize)
-	ax7.set_ylabel(r"Terminal velocity [m s$^{-1}$]",fontsize=labelsize)
-	plt.legend(loc='upper left',fontsize="xx-large")
-	ax7.set_xlim((0.9*np.min(D*1000.), 1.05*np.max(D*1000.)))
-	ax7.text(textpos[0],textpos[1],"(f)",fontsize=textsize,transform=ax7.transAxes)
-	plt.grid()
-	plt.subplots_adjust(bottom = bottom, top = top, right = right, left = 0.09, wspace = wspace, hspace = hspace)
-	plt.savefig('plots/exo_rain.png')
-
-if(False):
-	## Plot parameters	
-	pltspec = "Fe"
-	pltplanet = "Exo"
-	pltphase = "rain"
-	pltP = 100.
-	T = planet_data[pltplanet]["fT"](np.log10(pltP))
-	rho = (pltP*100.)/(8.314*T)
-
-	vTp = vT[pltspec][pltplanet][pltphase]
-
-	dmax = 	(8.*sigma)/(cD*rho*(vTp[pltP]**2.))
-	
-	## Initialize a figure
-	fig1 = plt.figure()
-	ax1 = fig1.add_subplot(111)
-
-	## Plot the vT points for the given plot paramter
-	ax1.plot(vTp["D"]*1000.,vTp[pltP],'k-')
-	ax1.plot(dmax*1000.,vTp[pltP],'k-')
-	
-	meeting = np.argmin((dmax-vTp["D"])**2.)
-	
-	print(dmax[meeting]*1000., vTp[pltP][meeting])
-	
-	ax1.set_xlim((0.9*np.min(D*1000.), 1.05*np.max(D*1000.)))
-	
-	## Get the fitted curve for the plot paramter
-	fitted = x[pltspec][pltplanet][pltphase]*(vTp["D"]**y[pltspec][pltplanet][pltphase])*(Pref/pltP)**gamma[pltspec][pltplanet][pltphase]
-
-	## Calculate R^2 statistic
-	sstot = np.sum((vTp[pltP] - np.average(vTp[pltP]))**2.)
-	ssres = np.sum((vTp[pltP] - fitted)**2.)
-	R2 = 1. - ssres/sstot
-
-	## Plot the fitted curve as a - line
-	#ax1.plot(vTp["D"]*1000.,fitted,'k-')
-
-	## Annotate with R2 text
-	## The text function displays the text at the relative axis coordinate (first two numbers)
-	## So 0, 0 is the bot-left and 1,1 is the top-right and 0.5, 0.5 is in the middle of the plot
-	ax1.text(0.1,0.5,r"$R^2: %.4f$"%(R2),fontsize=textsize,transform=ax1.transAxes)
-	plt.show()
-if(False):
-	## Do not need to print values anymore
-	for printplanet in planet_data.keys():
-		## Do not need to print values anymore
-		print(printplanet)
-		for species in spec_data.keys():
-			if(spec_data[species]["docalc"] == False):
-				continue
-			if(printplanet not in spec_data[species]["planet"]):
-				continue
-			print(species)
-			print("----------------")
-			for phase in ["rain","ice","snow"]:
-				print("Phase: %s"%(phase))
-				print("x: %.4f"%(x[species][printplanet][phase]))
-				print("y: %.4f"%(y[species][printplanet][phase]))
-				print("gamma: %.4f"%(gamma[species][printplanet][phase]))
-				print()
-			print()
-	##'''
-
-#plt.show()
