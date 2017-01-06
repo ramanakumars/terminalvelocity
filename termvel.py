@@ -50,16 +50,26 @@ def dynvisc(planet):
 		return([1.718e-5 - 5.1e-8*273.,5.1e-8])
 	elif(planet == "Venus"):
 		return([4.46e-6, 3.64e-8])
+	elif(planet == "Uranus"):
+		molwt = planet_data["Uranus"]["M"]
+		m = molwt/(6.02e23)
+		dmol = 2.*0.137e-9#0.3988e-9
+		kb = (1.38e-23)
+		sigma = np.pi*dmol**2.
+		t = np.linspace(50., 200.,500.)
+		nu = np.sqrt(8.*m*t*kb/np.pi)/(3.*np.sqrt(2.)*sigma)
+		#corr = [0., np.sqrt(8.*m*kb/np.pi)/(3.*np.sqrt(2.)*sigma)]
+		return(least_squares(t,nu))
 	else:
 		## Fetch H2 and He concentrations
 		x1 = planet_data[planet]["xi"]["H2"]
 		x2 = planet_data[planet]["xi"]["He"]
 		
-		n = 64
+		n = 150
 		viscx = np.zeros(n+1)
 		viscy = np.zeros(n+1)
 		for i in range(n+1):
-			temperature = 100. + i*(500.-100.)/n;
+			temperature = 80. + i*(500.-80.)/n;
 
 			n1  = 90.6*np.power(temperature/300.,.6658);
 			n1  = n1/(1.+4./temperature);                # viscosity of H_2 in micropoise
@@ -129,15 +139,15 @@ def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 
 		lambda_a = (1.38e-23)*T/(np.sqrt(2.)*np.pi*dp**2.*pPa)
 
-		print(p, Re[4])
-
-		
 		gforce = m*g
 		#vT = (gforce)/(6.*np.pi*dynvisc*(D/2.))
 		#vT = ((1./D)*(dynvisc*Re)/(rho_air))
 		vT = (2./9.)*((D/2)**2.*g/dynvisc)*(rho - rho_air)
+
 		for i, Di in enumerate(D):
-			if Re[i] > 1.e-12:
+			if Re[i] > 1.e-25:
+				if(Di == 0.2e-6):
+					print(p, dynvisc)
 				kn = lambda_a/(Di/2.)
 				vT[i] = (1. + 1.249*kn + 0.42*kn*np.exp(-0.87/kn))*vT[i]
 		return vT
@@ -216,6 +226,7 @@ for planet in planet_data.keys():
 	## Calculate molar mass of atmosphere from H2 and He concentrations
 	Matmo = molarmass([planet_data[planet]["xi"][spec] for spec in planet_data[planet]["xi"].keys()],[spec_data[spec]["mass"] for spec in planet_data[planet]["xi"].keys()])
 	Ratmo = 8314.4598/Matmo
+	planet_data[planet]["M"] = Matmo
 	planet_data[planet]["R"] = Ratmo
 	
 	## Open the T-P and viscosity file
@@ -473,17 +484,39 @@ def sedspeed(p, t, g, r, molwt):
 
 
 vT_dat = vT["CH4"]["Uranus"]["ice"]
+D = vT_dat["D"][4]
 vT = np.asarray([vT_dat[Pi][4]*1.e3 for Pi in P["CH4"]])
 plt.plot(vT,P["CH4"],'-')
-plt.axes().set_yscale('log')
-plt.axes().set_xscale('log')
-plt.axes().set_ylim((10000.,1.))
 
+dynvisc_corr = planet_data["Uranus"]["mucorr"]
+t = planet_data["Uranus"]["fT"](np.log10(P["CH4"]))
 
-sed = sedspeed(P["CH4"]/1.e3,planet_data["Uranus"]["fT"](np.log10(P["CH4"])),869.,1.e-5,2.)
+molwt = planet_data["Uranus"]["M"]
+m = molwt/(6.02e23)
+dmol = 2.*0.137e-9#0.3988e-9
+kb = (1.38e-23)
+sigma = np.pi*dmol**2.
+eta1 = dynvisc_corr[0] + dynvisc_corr[1]*t
+eta2 = np.sqrt(8.*m*kb*t/np.pi)/(3.*np.sqrt(2.)*sigma)
+
+sed = sedspeed(P["CH4"]/1.e3,planet_data["Uranus"]["fT"](np.log10(P["CH4"])),869.,(D/2)*100.,2.)
 
 #plt.plot(sedx, sedy, '--')
 
 plt.plot(sed, P["CH4"], '--')
+
+# plt.plot(eta1, P["CH4"],'-')
+# plt.plot(eta2, P["CH4"],'--')
+plt.axes().set_yscale('log')
+plt.axes().set_xscale('log')
+plt.axes().set_ylim((10000.,1.))
+#plt.axes().set_xlim((1.e-6,1.e-3))
+
+# plt.figure()
+# plt.plot(eta1-eta2, P["CH4"],'-')
+# plt.axes().set_yscale('log')
+# plt.axes().set_xscale('log')
+# plt.axes().set_ylim((10000.,1.))
+
 
 plt.show()
