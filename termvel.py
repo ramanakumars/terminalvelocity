@@ -50,27 +50,27 @@ def dynvisc(planet):
 		return([1.718e-5 - 5.1e-8*273.,5.1e-8])
 	elif(planet == "Venus"):
 		return([4.46e-6, 3.64e-8])
-	elif(planet == "Uranus"):
-		molwt = planet_data["Uranus"]["M"]
-		m = molwt/(6.02e23)
-		dmol = 2.*0.137e-9#0.3988e-9
-		kb = (1.38e-23)
-		sigma = np.pi*dmol**2.
-		t = np.linspace(50., 200.,500.)
-		nu = np.sqrt(8.*m*t*kb/np.pi)/(3.*np.sqrt(2.)*sigma)
-		#corr = [0., np.sqrt(8.*m*kb/np.pi)/(3.*np.sqrt(2.)*sigma)]
-		return(least_squares(t,nu))
+	# elif(planet == "Uranus"):  ## FROM Smyshlyaev et al. 2010 Izv. Atmos. Ocean Phys. 46: 265.
+	# 	molwt = planet_data["Uranus"]["M"]
+	# 	m = molwt/(6.02e23)*1.e-3
+	# 	dmol = 2.*0.137e-9#0.3988e-9
+	# 	kb = (1.38e-23)
+	# 	sigma = np.pi*dmol**2.
+	# 	t = np.linspace(80, 200.,500)
+	# 	nu = np.sqrt(8.*m*t*kb/np.pi)/(3.*np.sqrt(2.)*sigma)
+	# 	#corr = [0., np.sqrt(8.*m*kb/np.pi)/(3.*np.sqrt(2.)*sigma)]
+	# 	return(least_squares(t,nu))
 	else:
 		## Fetch H2 and He concentrations
 		x1 = planet_data[planet]["xi"]["H2"]
 		x2 = planet_data[planet]["xi"]["He"]
 		
-		n = 150
+		n = 400 ## Increased sample points
 		viscx = np.zeros(n+1)
 		viscy = np.zeros(n+1)
 		for i in range(n+1):
-			temperature = 80. + i*(500.-80.)/n;
-
+			## Added larger temperature range to account for Uranus/Neptune atmosphere
+			temperature = 70. + i*(500.-80.)/n; 
 			n1  = 90.6*np.power(temperature/300.,.6658);
 			n1  = n1/(1.+4./temperature);                # viscosity of H_2 in micropoise
 			n2  = 191.6*np.power(temperature/300.,.7176);
@@ -137,19 +137,20 @@ def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 		if(species == "CH4"):
 			dp = 2.*0.137e-9
 
-		lambda_a = (1.38e-23)*T/(np.sqrt(2.)*np.pi*dp**2.*pPa)
 
-		gforce = m*g
+		#gforce = m*g
 		#vT = (gforce)/(6.*np.pi*dynvisc*(D/2.))
 		#vT = ((1./D)*(dynvisc*Re)/(rho_air))
-		vT = (2./9.)*((D/2)**2.*g/dynvisc)*(rho - rho_air)
+		vT = (2./9.)*(((D/2)**2.)*g/dynvisc)*(rho)
 
 		for i, Di in enumerate(D):
 			if Re[i] > 1.e-25:
-				if(Di == 0.2e-6):
-					print(p, dynvisc)
+				lambda_a = (1.38e-23)*T/(np.sqrt(2.)*np.pi*(dp**2.)*pPa)
 				kn = lambda_a/(Di/2.)
-				vT[i] = (1. + 1.249*kn + 0.42*kn*np.exp(-0.87/kn))*vT[i]
+				ckn = (1. + 1.249*kn + 0.42*kn*np.exp(-0.87/kn))
+				if(Di == 0.2e-6):
+					print(p, vT[i]*100.)
+				vT[i] = ckn*vT[i]
 		return vT
 
 def cD_rain(planet,p, species):
@@ -264,7 +265,7 @@ Pref = 100.
 # P["CH4"] = np.asarray([30., 40.,50., 60., 70., 100., 1000., 1100., 1200., 1300., 2500., 2600., 2700., 2800.,\
 # 	2900., 3000.])
 
-P["CH4"] = 10.**np.arange(0.,4, 0.01)
+P["CH4"] = 10.**np.arange(0.,4, 0.1)
 
 ## x, y, gamma, vT and chi are dictionaries which are organized as follows:
 ## [Variable] - either x, y, gamma or chi^2 of the fit
@@ -475,48 +476,56 @@ def sedspeed(p, t, g, r, molwt):
 	kb = (1.38e-23)*(1.e7)
 	sigma = np.pi*dmol**2.
 	pgps2pm = p*1.e8
-	lambda_a = (kb*t/(np.sqrt(2.)*np.pi*(dmol**2.)*pgps2pm))*1.e2
+	lambda_a = (kb*t/ (np.sqrt(2.)*np.pi*(dmol**2.)*pgps2pm))*1.e2
 	eta = np.sqrt(8.*m*kb*t/np.pi)/(3.*np.sqrt(2.)*sigma)
 	kn = lambda_a/r
 	ckn = 1. + 1.249*kn + 0.42*kn*np.exp(-0.87/kn)
-	w = xs*xc*(2./9.)*rho*(r**2.)*g*ckn/eta
+	v = xs*xc*(2./9.)*rho*(r**2.)*g/eta
+	w = v*ckn
+	for i, pi in enumerate(p):
+		print(pi, v[i])
 	return w
 
 
 vT_dat = vT["CH4"]["Uranus"]["ice"]
 D = vT_dat["D"][4]
-vT = np.asarray([vT_dat[Pi][4]*1.e3 for Pi in P["CH4"]])
-plt.plot(vT,P["CH4"],'-')
+vT = np.asarray([vT_dat[Pi][4]*1.e2 for Pi in P["CH4"]])
 
 dynvisc_corr = planet_data["Uranus"]["mucorr"]
 t = planet_data["Uranus"]["fT"](np.log10(P["CH4"]))
 
 molwt = planet_data["Uranus"]["M"]
-m = molwt/(6.02e23)
+m = molwt/(6.02e23)*1.e-3
 dmol = 2.*0.137e-9#0.3988e-9
 kb = (1.38e-23)
 sigma = np.pi*dmol**2.
 eta1 = dynvisc_corr[0] + dynvisc_corr[1]*t
 eta2 = np.sqrt(8.*m*kb*t/np.pi)/(3.*np.sqrt(2.)*sigma)
 
-sed = sedspeed(P["CH4"]/1.e3,planet_data["Uranus"]["fT"](np.log10(P["CH4"])),869.,(D/2)*100.,2.)
+sed = sedspeed(P["CH4"]/1.e3,planet_data["Uranus"]["fT"](np.log10(P["CH4"])),869.,(D/2.)*100.,molwt)
 
 #plt.plot(sedx, sedy, '--')
-
+plt.plot(vT,P["CH4"],'-')
 plt.plot(sed, P["CH4"], '--')
-
-# plt.plot(eta1, P["CH4"],'-')
-# plt.plot(eta2, P["CH4"],'--')
+plt.title('terminal velocity')
 plt.axes().set_yscale('log')
 plt.axes().set_xscale('log')
 plt.axes().set_ylim((10000.,1.))
-#plt.axes().set_xlim((1.e-6,1.e-3))
+
+plt.figure()
+plt.plot(eta1, P["CH4"],'-')
+plt.plot(eta2, P["CH4"],'--')
+plt.title('viscosity')
+plt.axes().set_xlim((1.e-6,1.e-3))
+plt.axes().set_yscale('log')
+plt.axes().set_xscale('log')
+plt.axes().set_ylim((10000.,1.))
+
 
 # plt.figure()
 # plt.plot(eta1-eta2, P["CH4"],'-')
 # plt.axes().set_yscale('log')
 # plt.axes().set_xscale('log')
 # plt.axes().set_ylim((10000.,1.))
-
 
 plt.show()
