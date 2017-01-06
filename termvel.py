@@ -117,15 +117,29 @@ def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 	elif(phase == "ice"):
 		A_Ae = spec_data[species]["A_Ae_"+phase]
 		rho_scale = spec_data[species]["rho_ice"]/spec_data["H2O"]["rho_ice"]
+		rho = spec_data[species]["rho_ice"]
 		m = spec_data[species]["rho_ice"]*((4./3.)*np.pi*(D/2.)**3.)
 		
-		"""
+		
 		X = ((8.*A_Ae*m*rho_air*g)/(np.pi*dynvisc**2))
 		Re = 8.5*(np.sqrt(1. + 0.1519*np.sqrt(X)) - 1.)**2.
-		"""
+
+		if(species == "CH4"):
+			dp = 2.*0.137e-9
+
+		lambda_a = (1.38e-23)*T/(np.sqrt(2.)*np.pi*dp**2.*pPa)
+
+		print(p, Re[4])
+
 		
 		gforce = m*g
-		vT = (gforce)/(6.*np.pi*dynvisc*(D/2.))
+		#vT = (gforce)/(6.*np.pi*dynvisc*(D/2.))
+		#vT = ((1./D)*(dynvisc*Re)/(rho_air))
+		vT = (2./9.)*((D/2)**2.*g/dynvisc)*(rho - rho_air)
+		for i, Di in enumerate(D):
+			if Re[i] > 1.e-12:
+				kn = lambda_a/(Di/2.)
+				vT[i] = (1. + 1.249*kn + 0.42*kn*np.exp(-0.87/kn))*vT[i]
 		return vT
 
 def cD_rain(planet,p, species):
@@ -158,7 +172,7 @@ planet_data = {}
 
 ## Uranus and Neptune atmos data from Encrenaz 2004 DOI: 10.1007/s11214-005-1950-6
 planet_data["Uranus"] = {"g":8.69, "xi": {"H2":0.83,"He": 0.15,"CH4": 0.03}, "datfile": "uranus_data.csv", "Pref": 1000.}
-planet_data["Neptune"] = {"g":11.15, "xi": {"H2":0.79,"He": 0.18,"CH4": 0.03}, "datfile": "neptune_data.csv", "Pref": 1000.}
+#planet_data["Neptune"] = {"g":11.15, "xi": {"H2":0.79,"He": 0.18,"CH4": 0.03}, "datfile": "neptune_data.csv", "Pref": 1000.}
 
 ## Titan data from Lorenz 1993
 #planet_data["Titan"] = {"g":1.352, "xi": {"N2":0.942,"H2": 0.001,"CH4": 0.056}, "datfile": "titan_data.csv", "Pref": 1000.}
@@ -236,8 +250,10 @@ for planet in planet_data.keys():
 P = {}
 Pref = 100.
 
-P["CH4"] = np.asarray([30., 40.,50., 60., 70., 100., 1000., 1100., 1200., 1300., 2500., 2600., 2700., 2800.,\
-	2900., 3000.])
+# P["CH4"] = np.asarray([30., 40.,50., 60., 70., 100., 1000., 1100., 1200., 1300., 2500., 2600., 2700., 2800.,\
+# 	2900., 3000.])
+
+P["CH4"] = 10.**np.arange(0.,4, 0.01)
 
 ## x, y, gamma, vT and chi are dictionaries which are organized as follows:
 ## [Variable] - either x, y, gamma or chi^2 of the fit
@@ -367,21 +383,107 @@ for species in spec_data.keys():
 			x[species][planet][phase] = 10.**par[0]
 			y[species][planet][phase] = par[1]
 
-printplanet = "Uranus"
-printspecies = "CH4"
-print("\n\nP(mbar) \t D (mu m) \t m (kg) \t V (mu m/s) \n")
-print("-------------------------------------------------------------\n")
-for i, Pi in enumerate(P["CH4"]):
-	if(Pi < 1000.):
-		Di = 1
-	elif(Pi < 2000.):
-		Di = 4
-	else:
-		Di = 7
-	vT_dat = vT[printspecies][printplanet]["ice"]
-	print("%4.f \t\t %.1f \t\t %.2e \t %.2f \n"%(Pi,vT_dat["D"][Di]*1.e6,430.*(4./3.)*np.pi*(vT_dat["D"][Di]/2.)**3.,vT_dat[Pi][Di]*1.e6))
-	if(Pi in [100., 1300.]):
-		print ("-----------------------------------------------------------\n")
-print("%4.f \t\t %.1f \t\t %.2e \t %.2f \n"%(Pi,vT_dat["D"][-1]*1.e6,430.*(4./3.)*np.pi*(vT_dat["D"][-1]/2.)**3.,vT_dat[Pi][-1]*1.e6))
+# printplanet = "Uranus"
+# printspecies = "CH4"
+# print("\n\nP(mbar) \t D (mu m) \t m (kg) \t V (cm m/s) \n")
+# print("-------------------------------------------------------------\n")
+# for i, Pi in enumerate(P["CH4"]):
+# 	# if(Pi < 1000.):
+# 	# 	Di = 4
+# 	# elif(Pi < 2000.):
+# 	# 	Di = 6
+# 	# else:
+# 	# 	Di = 7
+# 	Di = 4
+# 	vT_dat = vT[printspecies][printplanet]["ice"]
+# 	print("%4.f \t\t %.1f \t\t %.2e \t %.2e \n"%(Pi,vT_dat["D"][Di]*1.e6,430.*(4./3.)*np.pi*(vT_dat["D"][Di]/2.)**3.,vT_dat[Pi][Di]*1.e3))
+# 	if(Pi in [100., 1300.]):
+# 		print ("-----------------------------------------------------------\n")
+# print("%4.f \t\t %.1f \t\t %.2e \t %.2e \n"%(Pi,vT_dat["D"][-1]*1.e6,430.*(4./3.)*np.pi*(vT_dat["D"][-1]/2.)**3.,vT_dat[Pi][-1]*1.e3))
 
 
+# ; INPUTS
+# ;   p = pressure in bars
+# ;   t = temperature in K
+# ;   g = acceleration of gravity in cm/s^2
+# ;   vv = particle volume in microns^3
+# ; OUTPUT
+# ;  sedspeed = sedimentation speed in cm/s
+# ; KEYWORDS
+# ;  molwt = molecular weight of gas in grams/mole
+# ;  cknsw = switch, set to 1 to turn off Cunningham correction
+# ;  verbose = switch set to 1 to turn on printing of molwt,
+# ;            P,T,mean freee path, Knudsen no.,Cunningham
+# ;            correction factor
+# ;==========================================================
+# ; compute mean free path
+# if n_elements(molwt) ne 0 then molwt = molwt else molwt=2
+# ; compute mean free path lambda and viscosity eta
+# ;print,'molwt=',molwt
+# m = molwt/6.023D23   ; mass of molecule in grams
+# ;dmol= 0.289E-7        ; diameter of an H2 molecule in cm
+# if molwt eq 2 then dmol=2*0.137E-7 ; Sears Thermodynamics Text
+# if molwt eq 29 then dmol=2*0.188E-7 ; Sears Thermodynamics Text
+# kb = 1.38064852D-23  ; Boltzmann constant, m2 kg s-2 K-1
+# kb=kb * 1e4          ; cm2 kg s-2 /K
+# kb=kb * 1e3          ; cm2 g s^-2 K^-1
+# sigma= !pi*dmol^2     ; cm^2
+# pnpm2 = p*1E5 ; converts bars to Newton/m^2 = kg m/s^2/m2 = kg s^-2 m^-1
+# pgps2pm = pnpm2*1e3 ; g/s2/m
+# lambda = kb *T/(sqrt(2)*!pi*dmol^2*pgps2pm) ; cm2 g s-2 /(cm2 g s-2 m-1)
+# lambda = lambda *1e2 ; mean free path in cm (for gas, but may need value for particle)
+# ; Below, eta is viscosity 
+# eta = sqrt(8*m*kb*T/!pi)/(3*Sqrt(2.)*sigma) ; (gm cm2 gm s-2 K-1 K)^1/2 cm-2
+# ;       = gm cm /s  cm-2 = gm / cm-s  = poise = 10-3 kg/cm-s = 10^-1 kg/m-s 
+# r=1e-4*(vv*3/(4.*!pi))^(1/3.) ; particle radius in cm
+# kn=lambda/r  ; Knudsen number
+# if n_elements(knval) ne 0 then knval=kn
+# ;ckn = 1.+1.257*kn+0.4*kn*exp(-1.1/kn)   ; Fuchs (1064)
+# ckn = 1.+1.249*kn+0.42*kn*exp(-0.87/kn) ; from Kasten (1968)
+# if n_elements(cknsw) ne 0 then ckn=1.0
+# rho = 1.0 ; g/cm^3  particle density
+# xs = 1.0  ; shape factor
+# xc = 1.0  ; collision factor
+# w=xs*xc*(2/9.)*rho*r^2*g*ckn/eta
+# if n_elements(verbose) ne 0 then begin
+#     if verbose gt 0 then print,string(format=$
+#      "('molwt=',i3,', P=',E10.2,' bars, T=',F7.2,'K, lambda=',E10.2,' cm, kn=',E10.4,', ckn=',E10.2,' Speed=',E10.2,' cm/s')",$
+#      molwt,p,T,lambda,Kn,ckn,w)
+# endif
+# RETURN,w
+# END
+
+
+def sedspeed(p, t, g, r, molwt):
+	rho = 0.43
+	xs = 1.
+	xc = 1.
+
+	m = molwt/(6.02e23)
+	dmol = 2*0.137e-7
+	kb = (1.38e-23)*(1.e7)
+	sigma = np.pi*dmol**2.
+	pgps2pm = p*1.e8
+	lambda_a = (kb*t/(np.sqrt(2.)*np.pi*(dmol**2.)*pgps2pm))*1.e2
+	eta = np.sqrt(8.*m*kb*t/np.pi)/(3.*np.sqrt(2.)*sigma)
+	kn = lambda_a/r
+	ckn = 1. + 1.249*kn + 0.42*kn*np.exp(-0.87/kn)
+	w = xs*xc*(2./9.)*rho*(r**2.)*g*ckn/eta
+	return w
+
+
+vT_dat = vT["CH4"]["Uranus"]["ice"]
+vT = np.asarray([vT_dat[Pi][4]*1.e3 for Pi in P["CH4"]])
+plt.plot(vT,P["CH4"],'-')
+plt.axes().set_yscale('log')
+plt.axes().set_xscale('log')
+plt.axes().set_ylim((10000.,1.))
+
+
+sed = sedspeed(P["CH4"]/1.e3,planet_data["Uranus"]["fT"](np.log10(P["CH4"])),869.,1.e-5,2.)
+
+#plt.plot(sedx, sedy, '--')
+
+plt.plot(sed, P["CH4"], '--')
+
+plt.show()
