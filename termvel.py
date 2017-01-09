@@ -147,7 +147,7 @@ def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 			if Re[i] > 1.e-25:
 				lambda_a = (1.38e-23)*T/(np.sqrt(2.)*np.pi*(dp**2.)*pPa)
 				kn = lambda_a/(Di/2.)
-				ckn = (1. + 1.249*kn + 0.42*kn*np.exp(-0.87/kn))
+				ckn = (1. + 1.26*kn)
 				if(Di == 0.2e-6):
 					print(p, vT[i]*100.)
 				vT[i] = ckn*vT[i]
@@ -504,22 +504,31 @@ eta2 = np.sqrt(8.*m*kb*t/np.pi)/(3.*np.sqrt(2.)*sigma)
 
 sed = sedspeed(P["CH4"]/1.e3,planet_data["Uranus"]["fT"](np.log10(P["CH4"])),869.,(D/2.)*100.,molwt)
 
+plt.rc('text',usetex=True)
+plt.rc('font',family='serif')
+
 #plt.plot(sedx, sedy, '--')
 plt.plot(vT,P["CH4"],'-')
 plt.plot(sed, P["CH4"], '--')
-plt.title('terminal velocity')
+plt.title(r'Terminal velocity')
 plt.axes().set_yscale('log')
 plt.axes().set_xscale('log')
 plt.axes().set_ylim((10000.,1.))
+plt.axes().set_xlim((1.e-5,1.))
+plt.axes().set_ylabel(r'Pressure [mbar]')
+plt.axes().set_xlabel(r'Terminal velocity [$\mu$m s$^{-1}$]')
 
 plt.figure()
 plt.plot(eta1, P["CH4"],'-')
 plt.plot(eta2, P["CH4"],'--')
-plt.title('viscosity')
-plt.axes().set_xlim((1.e-6,1.e-3))
+plt.plot(eta1 - eta2, P["CH4"],'-.')
+plt.title(r'Viscosity')
+plt.axes().set_xlim((1.e-6,1.e-5))
 plt.axes().set_yscale('log')
 plt.axes().set_xscale('log')
 plt.axes().set_ylim((10000.,1.))
+plt.axes().set_ylabel(r'Pressure [mbar]')
+plt.axes().set_xlabel(r'Viscosity [kg m$^{-1}$ s$^{-1}$]')
 
 
 # plt.figure()
