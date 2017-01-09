@@ -148,8 +148,6 @@ def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 				lambda_a = (1.38e-23)*T/(np.sqrt(2.)*np.pi*(dp**2.)*pPa)
 				kn = lambda_a/(Di/2.)
 				ckn = (1. + 1.26*kn)
-				if(Di == 0.2e-6):
-					print(p, vT[i]*100.)
 				vT[i] = ckn*vT[i]
 		return vT
 
@@ -482,8 +480,6 @@ def sedspeed(p, t, g, r, molwt):
 	ckn = 1. + 1.249*kn + 0.42*kn*np.exp(-0.87/kn)
 	v = xs*xc*(2./9.)*rho*(r**2.)*g/eta
 	w = v*ckn
-	for i, pi in enumerate(p):
-		print(pi, v[i])
 	return w
 
 
