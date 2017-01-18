@@ -512,7 +512,7 @@ plt.axes().set_xscale('log')
 plt.axes().set_ylim((10000.,1.))
 plt.axes().set_xlim((1.e-5,1.))
 plt.axes().set_ylabel(r'Pressure [mbar]')
-plt.axes().set_xlabel(r'Terminal velocity [$\mu$m s$^{-1}$]')
+plt.axes().set_xlabel(r'Terminal velocity [cm s$^{-1}$]')
 
 plt.figure()
 plt.plot(eta1, P["CH4"],'-')
