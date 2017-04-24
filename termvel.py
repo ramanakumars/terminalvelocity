@@ -50,6 +50,8 @@ def dynvisc(planet):
 		return([1.718e-5 - 5.1e-8*273.,5.1e-8])
 	elif(planet == "Venus"):
 		return([4.46e-6, 3.64e-8])
+	elif(planet == "Earth"):
+		return([2.95e-6, 5.206e-8])
 	else:
 		## Fetch H2 and He concentrations
 		x1 = planet_data[planet]["xi"]["H2"]
@@ -148,26 +150,29 @@ def vT_fit_old(x, a, b, c):
 global planet_data, spec_data
 ## Planet arrays
 planet_data = {}
-planet_data["Jupiter"]  = {"g": 22.31, "xi": {"H2":0.75,"He":0.25}, "datfile": "jupiter_data.csv", "Pref": 1000.}
-planet_data["Saturn"] = {"g":10.5, "xi":  {"H2":0.96,"He": 0.04}, "datfile": "saturn_data.csv", "Pref": 1000.}
+# planet_data["Jupiter"]  = {"g": 22.31, "xi": {"H2":0.75,"He":0.25}, "datfile": "jupiter_data.csv", "Pref": 1000.}
+# planet_data["Saturn"] = {"g":10.5, "xi":  {"H2":0.96,"He": 0.04}, "datfile": "saturn_data.csv", "Pref": 1000.}
 
-## Uranus and Neptune atmos data from Encrenaz 2004 DOI: 10.1007/s11214-005-1950-6
-planet_data["Uranus"] = {"g":8.69, "xi": {"H2":0.83,"He": 0.15,"CH4": 0.03}, "datfile": "uranus_data.csv", "Pref": 1000.}
-planet_data["Neptune"] = {"g":11.15, "xi": {"H2":0.79,"He": 0.18,"CH4": 0.03}, "datfile": "neptune_data.csv", "Pref": 1000.}
+# ## Uranus and Neptune atmos data from Encrenaz 2004 DOI: 10.1007/s11214-005-1950-6
+# planet_data["Uranus"] = {"g":8.69, "xi": {"H2":0.83,"He": 0.15,"CH4": 0.03}, "datfile": "uranus_data.csv", "Pref": 1000.}
+# planet_data["Neptune"] = {"g":11.15, "xi": {"H2":0.79,"He": 0.18,"CH4": 0.03}, "datfile": "neptune_data.csv", "Pref": 1000.}
 
-## Titan data from Lorenz 1993
-planet_data["Titan"] = {"g":1.352, "xi": {"N2":0.942,"H2": 0.001,"CH4": 0.056}, "datfile": "titan_data.csv", "Pref": 1000.}
+# ## Titan data from Lorenz 1993
+# planet_data["Titan"] = {"g":1.352, "xi": {"N2":0.942,"H2": 0.001,"CH4": 0.056}, "datfile": "titan_data.csv", "Pref": 1000.}
 
-## Venus data from Basilevsky and Head 2003
-planet_data["Venus"] = {"g":8.87, "xi": {"CO2":0.965,"N2": 0.0035}, "datfile": "venus_data.csv", "Pref": 1000.}
+# ## Venus data from Basilevsky and Head 2003
+# planet_data["Venus"] = {"g":8.87, "xi": {"CO2":0.965,"N2": 0.0035}, "datfile": "venus_data.csv", "Pref": 1000.}
+
+## Earth data
+planet_data["Earth"] = {"g":9.81, "xi": {"N2":0.79,"O2": 0.21}, "datfile": "earth_data.csv", "Pref": 1000.}
 
 ## Exoplanet data from Wakeford et al. 2016
-planet_data["Exo"] = {"g":10., "xi": {"H2":0.96,"He": 0.04}, "datfile": "exo_data.csv", "Pref": 1000.}
+# planet_data["Exo"] = {"g":10., "xi": {"H2":0.96,"He": 0.04}, "datfile": "exo_data.csv", "Pref": 1000.}
 
 ## Species arrays
 ## ant_ice and ant_liq are unnecessary and exist in case we need them for another calculation
 spec_data = {}
-spec_data["H2O"] = {"mass":18., "rho_ice": 917.0, "rho_liq": 1000., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Jupiter","Saturn"]}
+spec_data["H2O"] = {"mass":18., "rho_ice": 917.0, "rho_liq": 1000., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Earth"]}
 spec_data["NH3"] = {"mass":17., "rho_ice": 786.8, "rho_liq":  733., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Jupiter","Saturn"]}
 spec_data["NH4SH"] = {"mass":51., "rho_ice": (51./18.)*917.8, "rho_liq":  100., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Jupiter","Saturn"]}
 
@@ -186,6 +191,7 @@ spec_data["Fe"] = {"mass":142., "rho_ice": 100., "rho_liq":  6980., "A_Ae_snow":
 
 ## Non-condensing species
 spec_data["H2"] = {"mass": 2., "docalc": False}
+spec_data["O2"] = {"mass": 16., "docalc": False}
 spec_data["He"] = {"mass": 4., "docalc": False}
 spec_data["CO2"] = {"mass": 38., "docalc": False}
 spec_data["N2"] = {"mass": 28., "docalc": False}
@@ -231,7 +237,10 @@ for planet in planet_data.keys():
 P = {}
 Pref = 100.
 
-P["H2O"] = np.arange(1000.,5000.,100.)
+P["H2O"] = {}
+P["H2O"]["Earth"] = np.arange(500.,1000.,100.)
+P["H2O"]["Jupiter"] = np.arange(1000.,5000.,100.)
+P["H2O"]["Saturn"] = np.arange(1000.,5000.,100.)
 P["NH3"] = np.arange(400.,1000.,100.)
 P["CH4"] = np.arange(600.,2000.,100.)
 P["NH4SH"] = {}
@@ -294,6 +303,8 @@ for species in spec_data.keys():
 				Prange = P["H2S"][planet]
 			elif(species == "NH4SH"):
 				Prange = P["NH4SH"][planet]
+			elif(species == "H2O"):
+				Prange = P["H2O"][planet]
 			else:
 				Prange = P[species]
 			
@@ -302,7 +313,7 @@ for species in spec_data.keys():
 
 			
 			if(phase == "rain"):
-				D = np.linspace(200.e-6, 5.e-3, 1000.)
+				D = np.linspace(20.e-6, 5.e-3, 1000.)
 			elif(phase == "ice"):
 				D = np.linspace(1.e-6, 500.e-6, 1000.)
 			elif(phase == "snow"):
@@ -325,12 +336,12 @@ for species in spec_data.keys():
 			for i,p in enumerate(Prange):
 				vT_d = vT_calc(planet,species, phase, p, D, planet_data, spec_data)
 				vT[species][planet][phase][Prange[i]] = vT_d
-				header = header + "P=%i,vT,"%(int(p))				
+				header = header + "P=%04d,vT,"%(int(p))				
 				vT_dat[:,2*i] = D
 				vT_dat[:,2*i+1] = vT_d
 			
 			## save vT data to csv
-			outname = "data\%s_%s_%s.csv"%(planet,species,phase)
+			outname = "data/%s_%s_%s.csv"%(planet,species,phase)
 			np.savetxt(outname,vT_dat,header=header,delimiter=",")
 			
 			gamma_vals = []			
@@ -405,7 +416,7 @@ titley = 0.95
 textpos = (0.05, 0.85)
 
 ## Initialize a figure
-if(True):
+if(False):
 	## vT vs P plot for Jupiter CH4
 	pltspec = "H2O"
 	pltplanet = "Jupiter"
@@ -442,8 +453,45 @@ if(True):
 	ax1.text(titlex,titley,"Fig. 2",fontsize=textsize,transform=ax1.transAxes)
 	plt.savefig('plots/jup_h2o_vT_P.png')
 
-
 if(True):
+	## vT vs P plot for Earth H2O
+	pltspec = "H2O"
+	pltplanet = "Earth"
+	pltphase = "rain"
+
+	Pvals = np.sort(P[pltspec][pltplanet])
+
+	fig1 = plt.figure(figsize=(10,10))
+	ax1 = fig1.add_subplot(111)
+	
+	vTp = vT[pltspec][pltplanet][pltphase]
+
+	colors = ['r','g','b','k','c','m']
+
+	for i,pltP in enumerate(Pvals):
+		## Plot the vT points for the given plot paramter
+		ax1.plot(vTp["D"]*1000.,vTp[pltP],'--',color=colors[i])
+
+		## Get the fitted curve for the plot paramter
+		# fitted = x[pltspec][pltplanet][pltphase]*(vTp["D"]**y[pltspec][pltplanet][pltphase])*(Pref/pltP)**gamma[pltspec][pltplanet][pltphase]
+		
+		# ## Calculate R^2 statistic
+		# sstot = np.sum((vTp[pltP] - np.average(vTp[pltP]))**2.)
+		# ssres = np.sum((vTp[pltP] - fitted)**2.)
+		# R2 = 1. - ssres/sstot
+		
+		# ax1.plot(vTp["D"]*1000.,fitted,color=colors[i],label=r"P = $%d$ bar - $R^{2} = %.3f$"%(pltP/1000.,R2))
+	plt.grid()
+	plt.subplots_adjust(bottom = bottom, top = top, right = right, left = left, wspace = wspace, hspace = hspace)
+	ax1.set_xlabel(r"Diameter [mm]",fontsize=labelsize)
+	ax1.set_ylabel(r"Terminal velocity [m s$^{-1}$]",fontsize=labelsize)
+	ax1.set_xlim((0.9*np.min(vTp["D"]*1000.), 1.05*np.max(vTp["D"]*1000.)))
+	plt.legend(loc='lower right',fontsize="xx-large")
+	ax1.text(titlex,titley,"Fig. 2",fontsize=textsize,transform=ax1.transAxes)
+	plt.savefig('plots/earth_h2o_vT_P.png')
+
+
+if(False):
 	## Create a multiple plot
 	latexspec = {"H2O":"H$_{2}$O","NH3":"NH$_{3}$","NH4SH":"NH$_{4}$SH"}
 	fig2 = plt.figure(figsize=(10,10))
@@ -528,7 +576,7 @@ if(True):
 	plt.savefig('plots/jup_sat_h2o_nh3.png')
 	
 ## Do Uranus and Neptune
-if(True):
+if(False):
 	fig3 = plt.figure(figsize=(10,10))
 	ax4 = fig3.add_subplot(111)
 	latexspec = {"CH4":"CH$_{4}$","H2S":"H$_{2}$S"}
