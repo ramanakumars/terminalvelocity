@@ -148,21 +148,21 @@ def vT_fit_old(x, a, b, c):
 global planet_data, spec_data
 ## Planet arrays
 planet_data = {}
-planet_data["Jupiter"]  = {"g": 22.31, "xi": {"H2":0.75,"He":0.25}, "datfile": "jupiter_data.csv", "Pref": 1000.}
-planet_data["Saturn"] = {"g":10.5, "xi":  {"H2":0.96,"He": 0.04}, "datfile": "saturn_data.csv", "Pref": 1000.}
+# planet_data["Jupiter"]  = {"g": 22.31, "xi": {"H2":0.75,"He":0.25}, "datfile": "jupiter_data.csv", "Pref": 1000.}
+# planet_data["Saturn"] = {"g":10.5, "xi":  {"H2":0.96,"He": 0.04}, "datfile": "saturn_data.csv", "Pref": 1000.}
 
 ## Uranus and Neptune atmos data from Encrenaz 2004 DOI: 10.1007/s11214-005-1950-6
 planet_data["Uranus"] = {"g":8.69, "xi": {"H2":0.83,"He": 0.15,"CH4": 0.03}, "datfile": "uranus_data.csv", "Pref": 1000.}
 planet_data["Neptune"] = {"g":11.15, "xi": {"H2":0.79,"He": 0.18,"CH4": 0.03}, "datfile": "neptune_data.csv", "Pref": 1000.}
 
-## Titan data from Lorenz 1993
-planet_data["Titan"] = {"g":1.352, "xi": {"N2":0.942,"H2": 0.001,"CH4": 0.056}, "datfile": "titan_data.csv", "Pref": 1000.}
+# ## Titan data from Lorenz 1993
+# planet_data["Titan"] = {"g":1.352, "xi": {"N2":0.942,"H2": 0.001,"CH4": 0.056}, "datfile": "titan_data.csv", "Pref": 1000.}
 
-## Venus data from Basilevsky and Head 2003
-planet_data["Venus"] = {"g":8.87, "xi": {"CO2":0.965,"N2": 0.0035}, "datfile": "venus_data.csv", "Pref": 1000.}
+# ## Venus data from Basilevsky and Head 2003
+# planet_data["Venus"] = {"g":8.87, "xi": {"CO2":0.965,"N2": 0.0035}, "datfile": "venus_data.csv", "Pref": 1000.}
 
-## Exoplanet data from Wakeford et al. 2016
-planet_data["Exo"] = {"g":10., "xi": {"H2":0.96,"He": 0.04}, "datfile": "exo_data.csv", "Pref": 1000.}
+# ## Exoplanet data from Wakeford et al. 2016
+# planet_data["Exo"] = {"g":10., "xi": {"H2":0.96,"He": 0.04}, "datfile": "exo_data.csv", "Pref": 1000.}
 
 ## Species arrays
 ## ant_ice and ant_liq are unnecessary and exist in case we need them for another calculation
@@ -405,7 +405,7 @@ titley = 0.95
 textpos = (0.05, 0.85)
 
 ## Initialize a figure
-if(True):
+if(False):
 	## vT vs P plot for Jupiter CH4
 	pltspec = "H2O"
 	pltplanet = "Jupiter"
@@ -443,7 +443,7 @@ if(True):
 	plt.savefig('plots/jup_h2o_vT_P.png')
 
 
-if(True):
+if(False):
 	## Create a multiple plot
 	latexspec = {"H2O":"H$_{2}$O","NH3":"NH$_{3}$","NH4SH":"NH$_{4}$SH"}
 	fig2 = plt.figure(figsize=(10,10))
@@ -528,7 +528,7 @@ if(True):
 	plt.savefig('plots/jup_sat_h2o_nh3.png')
 	
 ## Do Uranus and Neptune
-if(True):
+if(False):
 	fig3 = plt.figure(figsize=(10,10))
 	ax4 = fig3.add_subplot(111)
 	latexspec = {"CH4":"CH$_{4}$","H2S":"H$_{2}$S"}
@@ -669,7 +669,7 @@ if(False):
 	## So 0, 0 is the bot-left and 1,1 is the top-right and 0.5, 0.5 is in the middle of the plot
 	ax1.text(0.1,0.5,r"$R^2: %.4f$"%(R2),fontsize=textsize,transform=ax1.transAxes)
 	plt.show()
-if(False):
+if(True):
 	## Do not need to print values anymore
 	for printplanet in planet_data.keys():
 		## Do not need to print values anymore
