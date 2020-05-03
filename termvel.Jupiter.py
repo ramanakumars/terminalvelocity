@@ -127,6 +127,10 @@ def vT_calc(planet, species, phase, p, D):
             dp = 2.*0.137e-9
         elif(species == "H2S"):
             dp = 0.36e-9
+        elif(species == "H2O"):
+            dp = 0.265e-9
+        elif(species == "NH3"):
+            dp = 0.26e-9
 
         vT = ((1./D)*(dynvisc*Re)/(rho_air))
 
@@ -143,15 +147,21 @@ def vT_calc(planet, species, phase, p, D):
         rho_scale = spec_data[species]["rho_ice"]/spec_data["H2O"]["rho_ice"]
         rho = spec_data[species]["rho_ice"]
         m = spec_data[species]["rho_ice"]*((4./3.)*np.pi*(D/2.)**3.)
+        m = rho_scale*(D/11.9)**2.
         
         
         X = ((8.*A_Ae*m*rho_air*g)/(np.pi*dynvisc**2))
         Re = 8.5*(np.sqrt(1. + 0.1519*np.sqrt(X)) - 1.)**2.
 
+        ''' from https://en.wikipedia.org/wiki/Kinetic_diameter '''
         if(species == "CH4"):
             dp = 2.*0.137e-9
         elif(species == "H2S"):
             dp = 0.36e-9
+        elif(species == "H2O"):
+            dp = 0.265e-9
+        elif(species == "NH3"):
+            dp = 0.26e-9
 
         #gforce = m*g
         #vT = (gforce)/(6.*np.pi*dynvisc*(D/2.))
@@ -163,8 +173,15 @@ def vT_calc(planet, species, phase, p, D):
                 lambda_a = (1.38e-23)*T/(np.sqrt(2.)*np.pi*(dp**2.)*pPa)
                 kn = lambda_a/(Di/2.)
                 ckn = (1. + 1.26*kn)
-                vT[i] = ckn*vT[i]
+                #vT[i] = ckn*vT[i]
         return vT
+
+def get_vT_fit(planet, species, phase, D, p):
+    xx = x[species][planet][phase]
+    yy = y[species][planet][phase]
+    ga = gamma[species][planet][phase]
+
+    return xx*(D)**yy*(Pref/p)**ga
 
 def cD_rain(planet,p, species):
     global planet_data, spec_data
@@ -191,12 +208,12 @@ def vT_fit_old(x, a, b, c):
 global planet_data, spec_data
 ## Planet arrays
 planet_data = {}
-#planet_data["Jupiter"]  = {"g": 22.31, "xi": {"H2":0.75,"He":0.25}, "datfile": "jupiter_data.csv", "Pref": 1000.}
+planet_data["Jupiter"]  = {"g": 22.31, "xi": {"H2":0.864,"He":0.163}, "datfile": "jupiter_data.csv", "Pref": 1000.}
 #planet_data["Saturn"] = {"g":10.5, "xi":  {"H2":0.96,"He": 0.04}, "datfile": "saturn_data.csv", "Pref": 1000.}
 
 ## Uranus and Neptune atmos data from Encrenaz 2004 DOI: 10.1007/s11214-005-1950-6
 # planet_data["Uranus"] = {"g":8.69, "xi": {"H2":0.83,"He": 0.15,"CH4": 0.03}, "datfile": "uranus_data.csv", "Pref": 1000.}
-planet_data["Neptune"] = {"g":11.15, "xi": {"H2":0.79,"He": 0.18,"CH4": 0.03}, "datfile": "neptune_data.csv", "Pref": 1000.}
+#planet_data["Neptune"] = {"g":11.15, "xi": {"H2":0.79,"He": 0.18,"CH4": 0.03}, "datfile": "neptune_data.csv", "Pref": 1000.}
 
 ## Titan data from Lorenz 1993
 #planet_data["Titan"] = {"g":1.352, "xi": {"N2":0.942,"H2": 0.001,"CH4": 0.056}, "datfile": "titan_data.csv", "Pref": 1000.}
@@ -212,7 +229,7 @@ planet_data["Neptune"] = {"g":11.15, "xi": {"H2":0.79,"He": 0.18,"CH4": 0.03}, "
 spec_data = {}
 spec_data["H2O"] = {"mass":18., "rho_ice": 917.0, "rho_liq": 1000., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Jupiter","Saturn"]}
 spec_data["NH3"] = {"mass":17., "rho_ice": 786.8, "rho_liq":  733., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Jupiter","Saturn"]}
-spec_data["NH4SH"] = {"mass":51., "rho_ice": (51./18.)*917.8, "rho_liq":  100., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Jupiter","Saturn"]}
+#spec_data["NH4SH"] = {"mass":51., "rho_ice": (51./18.)*917.8, "rho_liq":  100., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Jupiter","Saturn"]}
 
 ## From Uranus edited by Jay T. Bergstralh, Ellis D. Miner, Mildred ISBN: 978-0816512089 and #http://encyclopedia.airliquide.com/encyclopedia.asp?GasID=41#GeneralData
 spec_data["CH4"] = {"mass":16., "rho_ice": 430., "rho_liq":  656., "A_Ae_snow": 1.05, "A_Ae_ice": 1., "docalc":True,"planet":["Titan","Uranus","Neptune"]}
@@ -280,6 +297,8 @@ Pref = 1000.
 
 P["CH4"] = 10.**np.arange(0.,4, 0.1)
 P["H2S"] = 10.**np.arange(0.,4, 0.1)
+P["H2O"] = 10.**np.arange(0.,4, 0.1)
+P["NH3"] = 10.**np.arange(0.,4, 0.1)
 
 ## x, y, gamma, vT and chi are dictionaries which are organized as follows:
 ## [Variable] - either x, y, gamma or chi^2 of the fit
@@ -303,7 +322,7 @@ chi = {}
 for species in spec_data.keys():
     if(spec_data[species]["docalc"] == False):
         continue
-    #print("\nSpecies: %s"%(species))
+    # print("\nSpecies: %s"%(species))
     vT[species] = {}
     
     x[species] = {}
@@ -341,14 +360,16 @@ for species in spec_data.keys():
                 D = np.linspace(200.e-6, 5.e-3, 1000.)
             elif(phase == "ice"):
                 # D = np.asarray([0.08,0.1,0.11,0.19,0.2,0.21,0.59,0.60,0.61, 2.])*1.e-6
-                D = 10.**np.linspace(-7., -3., 1000)
+                D = 10.**np.linspace(-6., -3., 1000)
+                # D = np.linspace(0.1e-6, 5.e-5, 1000.)
             elif(phase == "snow"):
                 D = np.linspace(0.5e-3, 5.e-3, 1000.)
                 
             vT[species][planet][phase] = {}
             vT[species][planet][phase]["D"] = D
             
-            print("\t\t\tCalculating terminal velocity profile")
+            print("\t\tCalculating terminal velocity profile")
+            print("\t\tPhase: %s"%(phase))
             
             ## Initiaze the vT array with empty array
             for p in Prange:
@@ -384,10 +405,10 @@ for species in spec_data.keys():
             
             gamma[species][planet][phase] = np.average(gamma_vals)
             # print(np.average(gamma_vals), np.std(gamma_vals))
-            # if(phase == 'rain'):
-            # 	gamma[species][planet][phase] = 0.33
-            # else:
-            # 	gamma[species][planet][phase] = 0.47
+            ##if(phase == 'rain'):
+            ##     gamma[species][planet][phase] = 0.33
+            ##else:
+            ##     gamma[species][planet][phase] = 0.47
 
             ## Convert 2D array of pressure and particle size to 1D (xData)
             ## Also convert vT to 1D array (zData)
@@ -409,7 +430,7 @@ for species in spec_data.keys():
             print("\t\tFitting")
             par, cov = curve_fit(vT_fit, np.log10(xData),np.log10(zData))
 
-            print(cov)
+            # print(cov)
             ## Save the parameters
             x[species][planet][phase] = 10.**par[0]
             y[species][planet][phase] = par[1]
@@ -564,38 +585,45 @@ plt.rc("text.latex",preamble=r"\usepackage{amsmath} \usepackage{gensymb} ")
 plt.rc("font",size="18")
 
 fig = plt.figure(figsize=(8,8))
-planet  = "Neptune"
+ax1 = fig.add_subplot(311)
+ax2 = fig.add_subplot(312)
+ax3 = fig.add_subplot(313)
+planet  = "Jupiter"
+p   = 6000.
 
-Ds  = vT["CH4"][planet]["snow"]["D"]
-Di  = vT["H2S"][planet]["snow"]["D"]
+Ds  = vT["H2O"][planet]["snow"]["D"]
+Di  = vT["NH3"][planet]["ice"]["D"]
+Dr  = vT["NH3"][planet]["rain"]["D"]
 # vTs = vT[species][planet]["snow"][1000]
 # vTs = vT[species][planet]["snow"][1000]
 
-xs  = x["CH4"][planet]["snow"]
-ys  = y["CH4"][planet]["snow"]
 
-xi  = x["H2S"][planet]["snow"]
-yi  = y["H2S"][planet]["snow"]
+ax1.plot(Ds*1000, get_vT_fit(planet, "NH3", "snow", Ds, p), 'k-')
+ax1.plot(Ds*1000, vT_calc(planet, "NH3", "snow", p, Ds), 'k.', label='NH3 snow')
+ax1.plot(Ds*1000, get_vT_fit(planet, "H2O", "snow", Ds, p), 'b-')
+ax1.plot(Ds*1000, vT_calc(planet, "H2O", "snow", p, Ds), 'b.', label='H2O snow')
 
-vTi = xi*(Di)**(yi)
-vTs = xs*(Ds)**(ys)
+ax2.plot(Di*1.e6, get_vT_fit(planet, "NH3", "ice", Di, p), 'k--')
+ax2.plot(Di*1.e6, vT_calc(planet, "H2O", "ice", p, Di), 'b.-', label='H2O ice')
+ax2.plot(Di*1.e6, get_vT_fit(planet, "H2O", "ice", Di, p), 'b--')
+ax2.plot(Di*1.e6, vT_calc(planet, "NH3", "ice", p, Di), 'k.-', label='NH3 ice')
 
-vTi2 = (14.52)*(Di)**(0.458)
-vTs2 = (22.1705)*(Di)**(0.5038)
-
-plt.plot(Di*1000, vTi, 'k-')
-plt.plot(Di*1000, vTi2, 'k--')
-plt.plot(Di*1000, vT_calc(planet, "H2S", "snow", 1000., Di), 'k.')
-plt.plot(Ds*1000, vTs, 'b-')
-plt.plot(Ds*1000, vTs2, 'b--')
-plt.plot(Ds*1000, vT_calc(planet, "CH4", "snow", 1000., Ds), 'b.')
+ax3.plot(Dr*1.e6, get_vT_fit(planet, "NH3", "rain", Di, p), 'k--')
+ax3.plot(Dr*1.e6, vT_calc(planet, "H2O", "rain", p, Di), 'b.-', label='H2O rain')
+ax3.plot(Dr*1.e6, get_vT_fit(planet, "H2O", "rain", Di, p), 'b--')
+ax3.plot(Dr*1.e6, vT_calc(planet, "NH3", "rain", p, Di), 'k.-', label='NH3 snow')
 # plt.xscale('log')
 # plt.yscale('log')
-plt.xlabel(r'Diameter [mm]')
-plt.ylabel(r'Terminal velocity [m/s]')
+ax1.set_xlabel(r'Diameter [mm]')
+ax2.set_xlabel(r'Diameter [$\mu$m]')
+ax2.set_ylabel(r'Terminal velocity [m/s]')
 
-print(xi, yi, gamma["CH4"][planet]["snow"])
-print(xs, ys, gamma["H2S"][planet]["snow"])
+print('H2O snow: %.4f %.4f %.4f'%(x["H2O"][planet]["snow"], y["H2O"][planet]["snow"], gamma["H2O"][planet]["snow"]))
+print('H2O ice: %.4f %.4f %.4f'%(x["H2O"][planet]["ice"], y["H2O"][planet]["ice"], gamma["H2O"][planet]["ice"]))
+print('H2O rain: %.4f %.4f %.4f'%(x["H2O"][planet]["rain"], y["H2O"][planet]["rain"], gamma["H2O"][planet]["rain"]))
+print('NH3 snow: %.4f %.4f %.4f'%(x["NH3"][planet]["snow"], y["NH3"][planet]["snow"], gamma["NH3"][planet]["snow"]))
+print('NH3 ice: %.4f %.4f %.4f'%(x["NH3"][planet]["ice"], y["NH3"][planet]["ice"], gamma["NH3"][planet]["ice"]))
+print('NH3 rain: %.4f %.4f %.4f'%(x["NH3"][planet]["rain"], y["NH3"][planet]["rain"], gamma["NH3"][planet]["rain"]))
 
 plt.tight_layout()
 # plt.savefig('neptune_snow.png')
