@@ -174,27 +174,6 @@ for planet in planet_data.keys():
 	
 	planet_data[planet]["tpPressure"] = {}
 	
-	'''DEPRECATED
-	for species in spec_data.keys():
-		print("\tFinding fit for reference triple point pressure for %s"%(species))
-		tp = spec_data[species]["tp"]
-		tpP = 10.**(newtons(fT, tp, np.log10(5000.)))
-		print("\tTriple point found at %.2f mbar"%(tpP))
-		planet_data[planet]["tpPressure"][species] = tpP'''
-
-	''' UNNECESSARY
-	#Plot the data
-	plt.figure()
-	plt.plot(data[:,1],data[:,0],'ro')
-	plt.plot(fT(np.log10(P)),P,'r-')
-	plt.axes().set_yscale('log')
-	plt.axes().set_ylim((np.max(P),np.min(P)))
-	
-	plt.figure()
-	plt.plot(mu,P,'k--')
-	plt.axes().set_yscale('log')
-	plt.axes().set_ylim((np.max(P),np.min(P)))'''
-	
 ## Setup pressure intervals for vT calculation
 P = {}
 Pref = 1000.
