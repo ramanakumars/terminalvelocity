@@ -113,12 +113,12 @@ def vT_calc(planet, species, phase, p, D, planet_data, spec_data):
 			
 			vT[i] = (dynvisc*Re)/(di*rho_air)
 			
-			if(planet == "ExoHJ" and p == 1500 and i == dmin):
-				print(Re, dynvisc, k[i], rho_air, vT[i], di)
+			# if(planet == "ExoHJ" and p == 1500 and i == dmin):
+			# 	print(Re, dynvisc, k[i], rho_air, vT[i], di)
 	
-			elif(planet == "Jupiter" and p == 1000 and i == dmin):
-				print(Re, dynvisc, k[i], rho_air, vT[i], di)
-				#plt.plot(D*1000.,k,'-')
+			# elif(planet == "Jupiter" and p == 1000 and i == dmin):
+			# 	print(Re, dynvisc, k[i], rho_air, vT[i], di)
+			# 	#plt.plot(D*1000.,k,'-')
 		return vT
 	elif(phase == "snow"):
 		A_Ae = spec_data[species]["A_Ae_"+phase]
@@ -163,20 +163,20 @@ global planet_data, spec_data
 ## Planet arrays
 planet_data = {}
 planet_data["Jupiter"]  = {"g": 22.31, "xi": {"H2":0.864,"He":0.136}, "datfile": "jupiter_data.csv", "Pref": 1000.}
-planet_data["Saturn"] = {"g":10.5, "xi":  {"H2":0.96,"He": 0.04}, "datfile": "saturn_data.csv", "Pref": 1000.}
+# planet_data["Saturn"] = {"g":10.5, "xi":  {"H2":0.96,"He": 0.04}, "datfile": "saturn_data.csv", "Pref": 1000.}
 
 ## Titan data from Lorenz 1993
 #planet_data["Titan"] = {"g":1.352, "xi": {"N2":0.942,"H2": 0.001,"CH4": 0.056}, "datfile": "titan_data.csv", "Pref": 1000.}
 
 ## Venus data from Basilevsky and Head 2003
-planet_data["Venus"] = {"g":8.87, "xi": {"CO2":0.965,"N2": 0.0035}, "datfile": "venus_data.csv", "Pref": 1000.}
+# planet_data["Venus"] = {"g":8.87, "xi": {"CO2":0.965,"N2": 0.0035}, "datfile": "venus_data.csv", "Pref": 1000.}
 
 #planet_data["Earth"] = {"g":9.81, "xi": {"N2":0.70,"O2": 0.30}, "datfile": "earth_data.csv", "Pref": 1000.}
 
 ## Exoplanet data from Wakeford et al. 2016
-planet_data["ExoHJ"] = {"g":10., "xi": {"H2":0.96,"He": 0.04}, "datfile": "exo_data_hj.csv", "Pref": 1000.}
+# planet_data["ExoHJ"] = {"g":10., "xi": {"H2":0.96,"He": 0.04}, "datfile": "exo_data_hj.csv", "Pref": 1000.}
 
-planet_data["ExoBD"] = {"g":25., "xi": {"H2":0.96,"He": 0.04}, "datfile": "exo_data.csv", "Pref": 1000.}
+# planet_data["ExoBD"] = {"g":25., "xi": {"H2":0.96,"He": 0.04}, "datfile": "exo_data.csv", "Pref": 1000.}
 
 ## Species arrays
 ## ant_ice and ant_liq are unnecessary and exist in case we need them for another calculation
@@ -305,7 +305,7 @@ for species in spec_data.keys():
 				Prange = np.append(Prange,Pref)
 			
 			if(phase == "rain"):
-				D = np.linspace(200.e-6, 20.e-3, 5000.)
+				D = 10.**np.linspace(-6, 0., 5000.)
 			elif(phase == "ice"):
 				D = np.linspace(1.e-6, 500.e-6, 1000.)
 			elif(phase == "snow"):
@@ -398,14 +398,14 @@ for species in spec_data.keys():
 			y[species][planet][phase] = par[1]
 			gamma[species][planet][phase] = par[2]
 	
-if(False):
+if(True):
 	print("Doing plots")
 
 	## Initialize LateX
 	plt.rc('text', usetex=True)
 	plt.rc('font', family='serif')
 	plt.rc('font', size='14')
-	plt.rcParams["text.latex.preamble"].append(r'\usepackage{amsmath}')
+	plt.rc("text.latex", preamble=r"\usepackage{amsmath}")
 
 
 	params = {'xtick.labelsize':'xx-large','ytick.labelsize':'xx-large'}
@@ -490,7 +490,7 @@ if(False):
 
 
 	## Do Exoplanet HJ
-
+	'''
 	fig2 = plt.figure(figsize=(10,10))
 	ax2 = fig2.add_subplot(111)
 	ax2.text(titlex,titley,"Fig. 9",fontsize=textsize,transform=ax2.transAxes)
@@ -597,7 +597,7 @@ if(False):
 	fig4 = plt.figure(figsize=(10,10))
 	ax = fig4.add_subplot(111)
 
-	'''
+	''''''
 	plt.subplots_adjust(bottom = bottom, top = top, right = right, left = left, wspace = wspace, hspace = hspace)
 
 	Prange = np.arange(900., 1500., 100.)[::2]
@@ -644,7 +644,7 @@ if(False):
 	ax.set_xlabel(r"Diameter [mm]",fontsize = labelsize)
 	ax.set_ylabel(r"Terminal velocity [m s$^{-1}$]",fontsize = labelsize)
 	plt.legend(loc="upper left", fontsize = "x-large")
-	'''
+	''''''
 
 	doplot("H2O","ExoBD","rain",np.arange(900., 1500., 100.)[::2], ax)
 	ax.text(titlex,titley,"Fig. 10",fontsize=textsize,transform=ax.transAxes)
@@ -668,5 +668,5 @@ if(False):
 				print()
 			print()
 		##'''
-
-	#plt.show()
+	''''''
+	# plt.show()
